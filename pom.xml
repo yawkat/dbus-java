@@ -12,6 +12,13 @@
         <module>dbus</module>
     </modules>
 
+    <repositories>
+        <repository>
+            <id>yawkat</id>
+            <url>http://mvn.yawk.at</url>
+        </repository>
+    </repositories>
+
     <properties>
         <netty.version>5.0.0.Alpha2</netty.version>
         <lombok.version>1.16.4</lombok.version>
