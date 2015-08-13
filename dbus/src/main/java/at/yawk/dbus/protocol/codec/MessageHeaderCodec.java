@@ -29,9 +29,9 @@ public class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
     protected void decode(ChannelHandlerContext ctx, ByteBuf buf, List<Object> out)
             throws Exception {
         if (buf.readableBytes() >= 12) {
-            byte endianess = buf.readByte();
+            byte endianness = buf.readByte();
             ByteOrder order;
-            switch (endianess) {
+            switch (endianness) {
             case 'l':
                 order = ByteOrder.LITTLE_ENDIAN;
                 break;
@@ -39,7 +39,7 @@ public class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
                 order = ByteOrder.BIG_ENDIAN;
                 break;
             default:
-                throw new DecoderException("Unknown byte order byte " + endianess);
+                throw new DecoderException("Unknown byte order byte " + endianness);
             }
 
             buf.order(order);

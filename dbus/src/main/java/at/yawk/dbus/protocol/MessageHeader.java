@@ -1,6 +1,8 @@
 package at.yawk.dbus.protocol;
 
+import at.yawk.dbus.protocol.object.DbusObject;
 import java.nio.ByteOrder;
+import java.util.Map;
 import lombok.Data;
 
 /**
@@ -16,4 +18,5 @@ public class MessageHeader {
     private byte majorProtocolVersion;
     private long messageBodyLength;
     private int serial;
+    private Map<HeaderField, DbusObject> headers;
 }
