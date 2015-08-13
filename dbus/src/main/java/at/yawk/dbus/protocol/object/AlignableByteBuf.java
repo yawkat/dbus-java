@@ -67,9 +67,12 @@ public class AlignableByteBuf extends WrappedByteBuf {
 
     public void alignRead(int alignment) {
         checkAlign(alignment);
-        int i = readerIndex();
-        int toPad = calculateAlignmentOffset(messageOffset, i, alignment);
-        readerIndex(i + toPad);
+        int toPad = calculateAlignmentOffset(messageOffset, readerIndex(), alignment);
+        for (int i = 0; i < toPad; i++) {
+            if (readByte() != 0) {
+                throw new DeserializerException("Non-null byte in alignment padding");
+            }
+        }
     }
 
     public boolean canAlignWrite(int alignment) {
@@ -80,8 +83,9 @@ public class AlignableByteBuf extends WrappedByteBuf {
 
     public void alignWrite(int alignment) {
         checkAlign(alignment);
-        int i = writerIndex();
-        int toPad = calculateAlignmentOffset(messageOffset, i, alignment);
-        writerIndex(i + toPad);
+        int toPad = calculateAlignmentOffset(messageOffset, writerIndex(), alignment);
+        for (int i = 0; i < toPad; i++) {
+            writeByte(0);
+        }
     }
 }

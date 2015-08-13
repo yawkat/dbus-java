@@ -3,7 +3,6 @@ package at.yawk.dbus.protocol.object;
 import at.yawk.dbus.protocol.type.ArrayTypeDefinition;
 import at.yawk.dbus.protocol.type.TypeDefinition;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.List;
@@ -69,7 +68,7 @@ public abstract class ArrayObject implements DbusObject {
 
     @Override
     public void serialize(AlignableByteBuf buf) {
-        ByteBuf tempBuffer = serializeValues(buf.alloc());
+        ByteBuf tempBuffer = serializeValues(ArrayObject.allocateBufferForWrite(buf));
 
         buf.alignWrite(4);
         buf.writeInt(tempBuffer.writerIndex());
@@ -80,12 +79,20 @@ public abstract class ArrayObject implements DbusObject {
         tempBuffer.release();
     }
 
-    protected abstract ByteBuf serializeValues(ByteBufAllocator allocator);
+    protected abstract ByteBuf serializeValues(ByteBuf writeTarget);
 
     protected abstract int size();
 
     public abstract DbusObject get(int i);
 
+    /**
+     * Allocate a write buffer that will be written to the given target. Inherits endianness.
+     */
+    static ByteBuf allocateBufferForWrite(ByteBuf writeTarget) {
+        return writeTarget.alloc().buffer().order(writeTarget.order());
+    }
+
+    @ToString(callSuper = true)
     private static final class SimpleArrayObject extends ArrayObject {
         private final List<DbusObject> values;
 
@@ -95,8 +102,8 @@ public abstract class ArrayObject implements DbusObject {
         }
 
         @Override
-        protected ByteBuf serializeValues(ByteBufAllocator allocator) {
-            AlignableByteBuf tempBuffer = AlignableByteBuf.fromAlignedBuffer(allocator.buffer(), 8);
+        protected ByteBuf serializeValues(ByteBuf writeTarget) {
+            AlignableByteBuf tempBuffer = AlignableByteBuf.fromAlignedBuffer(allocateBufferForWrite(writeTarget), 8);
             for (DbusObject value : values) {
                 // we align to the 8-byte-mark later so we don't need to pass anything but 0
                 value.serialize(tempBuffer);

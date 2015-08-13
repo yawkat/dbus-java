@@ -4,6 +4,7 @@ import at.yawk.dbus.protocol.MessageHeader;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
+import java.nio.ByteOrder;
 
 /**
  * Channel properties used by the decoders
@@ -12,6 +13,8 @@ import io.netty.util.AttributeKey;
  */
 interface Local {
     String PREFIX = Local.class.getName() + '.';
+
+    ByteOrder OUTBOUND_ORDER = ByteOrder.LITTLE_ENDIAN;
 
     /**
      * The last message serial.

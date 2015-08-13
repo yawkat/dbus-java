@@ -27,9 +27,10 @@ import org.testng.annotations.Test;
  */
 @Slf4j
 public class DbusConnectorTest {
-    @Test
+    @Test//(enabled = false)
     public void testDefault() throws Exception {
-        DbusChannel channel = new DbusConnector().connectSystem();
+        DbusChannel channel =
+                new DbusConnector().connectSystem();//.connect(DbusAddress.fromUnixSocket(Paths.get("test")));
 
         DbusMessage message = new DbusMessage();
 
@@ -37,7 +38,8 @@ public class DbusConnectorTest {
         header.setMessageType(MessageType.METHOD_CALL);
         header.addHeader(HeaderField.PATH, ObjectPathObject.create("/org/freedesktop/UPower/devices/DisplayDevice"));
         header.addHeader(HeaderField.DESTINATION, BasicObject.createString("org.freedesktop.UPower"));
-        header.addHeader(HeaderField.MEMBER, BasicObject.createString("org.freedesktop.DBus.Properties.Get"));
+        header.addHeader(HeaderField.INTERFACE, BasicObject.createString("org.freedesktop.DBus.Properties"));
+        header.addHeader(HeaderField.MEMBER, BasicObject.createString("Get"));
         message.setHeader(header);
 
         MessageBody body = new MessageBody();
@@ -50,7 +52,7 @@ public class DbusConnectorTest {
         channel.closeStage().toCompletableFuture().get();
     }
 
-    @Test
+    @Test//(enabled = false)
     public void testServer() throws Exception {
         ServerBootstrap bootstrap = new ServerBootstrap();
         bootstrap.channel(EpollServerDomainSocketChannel.class);
@@ -67,7 +69,8 @@ public class DbusConnectorTest {
                         }
 
                         if (msg instanceof Begin) {
-                            ch.pipeline().addLast(new LoggingInboundAdapter())
+                            ch.pipeline()
+                                    .addLast(new LoggingInboundAdapter())
                                     .addLast(new DbusMainProtocol(new MessageConsumer() {
                                         @Override
                                         public boolean requireAccept(MessageHeader header) {
@@ -76,7 +79,23 @@ public class DbusConnectorTest {
 
                                         @Override
                                         public void accept(DbusMessage message) {
-                                            System.out.println(message);
+                                            DbusMessage response = new DbusMessage();
+
+                                            MessageHeader header = new MessageHeader();
+                                            header.setMessageType(MessageType.ERROR);
+                                            header.addHeader(HeaderField.REPLY_SERIAL, BasicObject.createUint32(
+                                                    message.getHeader().getSerial()));
+                                            //header.addHeader(HeaderField.SIGNATURE, SignatureObject.create(
+                                            //        Collections.singletonList(BasicType.VARIANT)));
+                                            header.addHeader(HeaderField.ERROR_NAME, BasicObject.createString(
+                                                    "Error"));
+                                            response.setHeader(header);
+
+                                            MessageBody body = new MessageBody();
+                                            //body.add(VariantObject.create(BasicObject.createString("testing!")));
+                                            response.setBody(body);
+
+                                            ch.writeAndFlush(response);
                                         }
                                     }));
                             ch.pipeline().remove((Class) getClass());

@@ -53,10 +53,10 @@ class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
     @Override
     protected void encode(ChannelHandlerContext ctx, MessageHeader msg, ByteBuf out)
             throws Exception {
-        AlignableByteBuf alignedBuf = AlignableByteBuf.fromMessageBuffer(out);
+        out = out.order(Local.OUTBOUND_ORDER);
 
-        ByteOrder order = out.order();
-        out.writeByte(order == ByteOrder.LITTLE_ENDIAN ? 'l' : 'B');
+        AlignableByteBuf alignedBuf = AlignableByteBuf.fromMessageBuffer(out);
+        out.writeByte(Local.OUTBOUND_ORDER == ByteOrder.LITTLE_ENDIAN ? 'l' : 'B');
 
         out.writeByte(msg.getMessageType().getId());
 

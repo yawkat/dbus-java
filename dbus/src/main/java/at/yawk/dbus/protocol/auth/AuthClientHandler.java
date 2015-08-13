@@ -34,6 +34,8 @@ class AuthClientHandler extends SimpleChannelInboundHandler<Command> {
             ok(ctx.channel(), (Ok) msg);
         } else if (msg instanceof Rejected) {
             rejected(ctx.channel(), (Rejected) msg);
+        } else if (msg instanceof AgreeUnixFd) {
+            agreeUnixFd(ctx.channel(), (AgreeUnixFd) msg);
         } else {
             throw new AuthenticationException("Unhandled message " + msg);
         }
@@ -57,12 +59,20 @@ class AuthClientHandler extends SimpleChannelInboundHandler<Command> {
     }
 
     private void ok(Channel channel, Ok ok) {
-        channel.writeAndFlush(new Begin());
-        completionFuture.setSuccess();
+        write(channel, new NegotiateUnixFd());
     }
 
     private void rejected(Channel channel, Rejected rejected) {
         throw new UnsupportedOperationException();
+    }
+
+    private void agreeUnixFd(Channel channel, AgreeUnixFd agreeUnixFd) {
+        write(channel, new Begin());
+        completionFuture.setSuccess();
+    }
+
+    private ChannelFuture write(Channel channel, Command msg) {
+        return channel.writeAndFlush(msg, channel.voidPromise());
     }
 
     @Override

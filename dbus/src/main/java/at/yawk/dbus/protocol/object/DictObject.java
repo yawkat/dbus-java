@@ -53,7 +53,8 @@ public class DictObject implements DbusObject {
 
     @Override
     public void serialize(AlignableByteBuf buf) {
-        AlignableByteBuf tempBuffer = AlignableByteBuf.fromAlignedBuffer(buf.alloc().buffer(), 8);
+        AlignableByteBuf tempBuffer = AlignableByteBuf.fromAlignedBuffer(
+                ArrayObject.allocateBufferForWrite(buf), 8);
         entries.forEach((k, v) -> {
             tempBuffer.alignWrite(8);
             k.serialize(tempBuffer);

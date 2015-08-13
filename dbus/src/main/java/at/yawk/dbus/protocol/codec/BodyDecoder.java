@@ -78,7 +78,6 @@ class BodyDecoder extends ByteToMessageDecoder {
         bodyObjects.add(object);
         currentTypeIndex++;
         bodyOffset += in.readerIndex() - itemStart;
-        log.trace("cti {}", currentTypeIndex);
 
         if (currentTypeIndex >= types.size()) {
             MessageBody body = new MessageBody();

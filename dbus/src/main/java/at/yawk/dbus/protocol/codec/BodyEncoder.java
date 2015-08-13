@@ -29,7 +29,7 @@ class BodyEncoder extends MessageToMessageEncoder<DbusMessage> {
         MessageBody body = msg.getBody();
         if (body != null && !body.getArguments().isEmpty()) {
             List<TypeDefinition> types = new ArrayList<>(body.getArguments().size());
-            ByteBuf bodyBuffer = ctx.alloc().buffer();
+            ByteBuf bodyBuffer = ctx.alloc().buffer().order(Local.OUTBOUND_ORDER);
             AlignableByteBuf aligned = AlignableByteBuf.fromAlignedBuffer(bodyBuffer, 8);
             for (DbusObject arg : body.getArguments()) {
                 types.add(arg.getType());

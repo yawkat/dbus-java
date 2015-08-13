@@ -8,6 +8,8 @@ import io.netty.channel.ChannelHandlerAppender;
  */
 public class DbusMainProtocol extends ChannelHandlerAppender {
     public DbusMainProtocol(MessageConsumer consumer) {
+        add(new ByteCollector());
+
         add(new MessageHeaderCodec());
 
         add(new BodyDecoder());
