@@ -1,10 +1,13 @@
 package at.yawk.dbus.protocol.auth;
 
-import at.yawk.dbus.protocol.DbusUtil;
-import at.yawk.dbus.protocol.auth.command.*;
-import at.yawk.dbus.protocol.auth.command.Error;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.*;
+import at.yawk.dbus.protocol.auth.command.Command;
+import at.yawk.dbus.protocol.auth.mechanism.AuthMechanism;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -12,7 +15,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 class AuthClientHandler extends SimpleChannelInboundHandler<Command> {
-    private ChannelPromise completionFuture;
+    private CompletableFuture<Command> currentCommandFuture = null;
 
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
@@ -26,49 +29,19 @@ class AuthClientHandler extends SimpleChannelInboundHandler<Command> {
 
     @Override
     protected void messageReceived(ChannelHandlerContext ctx, Command msg) throws Exception {
-        if (msg instanceof Data) {
-            data(ctx.channel(), (Data) msg);
-        } else if (msg instanceof Error) {
-            error(ctx.channel(), (Error) msg);
-        } else if (msg instanceof Ok) {
-            ok(ctx.channel(), (Ok) msg);
-        } else if (msg instanceof Rejected) {
-            rejected(ctx.channel(), (Rejected) msg);
-        } else if (msg instanceof AgreeUnixFd) {
-            agreeUnixFd(ctx.channel(), (AgreeUnixFd) msg);
-        } else {
-            throw new AuthenticationException("Unhandled message " + msg);
-        }
+        // may be modified in .complete
+        CompletableFuture<Command> future = currentCommandFuture;
+        if (future == null) { throw new UnexpectedCommandException(msg); }
+        currentCommandFuture = null;
+        future.complete(msg);
     }
 
-    public ChannelFuture startAuth(Channel channel) throws Exception {
-        String uid = DbusUtil.callCommand("id", "-u").trim();
-        assert uid.matches("\\d+");
-
-        channel.write(Unpooled.wrappedBuffer(new byte[]{ 0 })); // lead with single 0 byte
-        channel.writeAndFlush(new Auth("EXTERNAL", uid.getBytes()));
-        return completionFuture = channel.newPromise();
-    }
-
-    private void data(Channel channel, Data data) {
-        throw new UnsupportedOperationException();
-    }
-
-    private void error(Channel channel, Error error) {
-        throw new UnsupportedOperationException();
-    }
-
-    private void ok(Channel channel, Ok ok) {
-        write(channel, new NegotiateUnixFd());
-    }
-
-    private void rejected(Channel channel, Rejected rejected) {
-        throw new UnsupportedOperationException();
-    }
-
-    private void agreeUnixFd(Channel channel, AgreeUnixFd agreeUnixFd) {
-        write(channel, new Begin());
-        completionFuture.setSuccess();
+    CompletionStage<?> startAuth(Channel channel, AuthMechanism mechanism) throws Exception {
+        return mechanism.startAuth(command -> {
+            currentCommandFuture = new CompletableFuture<>();
+            channel.writeAndFlush(command);
+            return currentCommandFuture;
+        });
     }
 
     private ChannelFuture write(Channel channel, Command msg) {
@@ -78,6 +51,12 @@ class AuthClientHandler extends SimpleChannelInboundHandler<Command> {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         log.error("Exception in channel", cause);
-        completionFuture.setFailure(cause);
+
+        CompletableFuture<Command> future = currentCommandFuture;
+        if (future != null) {
+            // may be modified in .completeExceptionally
+            currentCommandFuture = null;
+            future.completeExceptionally(cause);
+        }
     }
 }

@@ -12,7 +12,7 @@ import lombok.RequiredArgsConstructor;
  * @author yawkat
  */
 @RequiredArgsConstructor
-public class DirectionValidatorAdapter extends ChannelHandlerAdapter {
+class DirectionValidatorAdapter extends ChannelHandlerAdapter {
     private final AuthDirection inbound;
     private final AuthDirection outbound;
 

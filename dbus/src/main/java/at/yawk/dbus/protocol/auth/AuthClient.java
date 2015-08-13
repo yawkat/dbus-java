@@ -1,9 +1,14 @@
 package at.yawk.dbus.protocol.auth;
 
 import at.yawk.dbus.protocol.auth.command.AuthDirection;
-import io.netty.channel.*;
+import at.yawk.dbus.protocol.auth.mechanism.AuthMechanism;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerAdapter;
+import io.netty.channel.ChannelHandlerContext;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 
 /**
  * @author yawkat
@@ -17,8 +22,8 @@ public class AuthClient extends ChannelHandlerAdapter {
             clientHandler
     );
 
-    public ChannelFuture startAuth(Channel channel) throws Exception {
-        return clientHandler.startAuth(channel);
+    public CompletionStage<?> startAuth(Channel channel, AuthMechanism mechanism) throws Exception {
+        return clientHandler.startAuth(channel, mechanism);
     }
 
     @Override

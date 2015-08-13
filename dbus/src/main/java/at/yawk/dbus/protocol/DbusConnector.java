@@ -1,10 +1,12 @@
 package at.yawk.dbus.protocol;
 
 import at.yawk.dbus.protocol.auth.AuthClient;
+import at.yawk.dbus.protocol.auth.mechanism.AuthMechanism;
+import at.yawk.dbus.protocol.auth.mechanism.ExternalFdAuthMechanism;
 import at.yawk.dbus.protocol.codec.DbusMainProtocol;
 import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.epoll.Epoll;
 import io.netty.channel.epoll.EpollDomainSocketChannel;
@@ -18,6 +20,7 @@ import java.net.SocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Properties;
+import java.util.concurrent.CompletionStage;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -69,8 +72,12 @@ public class DbusConnector {
         channel.pipeline().addLast("auth", authClient);
         channel.config().setAutoRead(true);
 
-        ChannelFuture completionPromise = authClient.startAuth(channel);
-        completionPromise.sync();
+        // I really don't get why dbus does this
+        channel.write(Unpooled.wrappedBuffer(new byte[]{ 0 }));
+
+        AuthMechanism mechanism = new ExternalFdAuthMechanism();
+        CompletionStage<?> completionPromise = authClient.startAuth(channel, mechanism);
+        completionPromise.toCompletableFuture().get();
         channel.pipeline().remove("auth");
 
         SwappableMessageConsumer swappableConsumer = new SwappableMessageConsumer(initialConsumer);
