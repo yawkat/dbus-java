@@ -3,9 +3,7 @@ package at.yawk.dbus.protocol.codec;
 import at.yawk.dbus.protocol.HeaderField;
 import at.yawk.dbus.protocol.MessageHeader;
 import at.yawk.dbus.protocol.MessageType;
-import at.yawk.dbus.protocol.object.AlignableByteBuf;
-import at.yawk.dbus.protocol.object.ArrayObject;
-import at.yawk.dbus.protocol.object.DbusObject;
+import at.yawk.dbus.protocol.object.*;
 import at.yawk.dbus.protocol.type.ArrayTypeDefinition;
 import at.yawk.dbus.protocol.type.BasicType;
 import at.yawk.dbus.protocol.type.StructTypeDefinition;
@@ -18,19 +16,22 @@ import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author yawkat
  */
 public class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
     // the headers are an array of byte:variant structs
-    private static final ArrayTypeDefinition HEADER_FIELD_LIST_TYPE =
-            new ArrayTypeDefinition(new StructTypeDefinition(Arrays.asList(
-                    BasicType.BYTE, VariantTypeDefinition.getInstance())));
+    private static final StructTypeDefinition HEADER_FIELD_TYPE =
+            new StructTypeDefinition(Arrays.asList(BasicType.BYTE, VariantTypeDefinition.getInstance()));
+    private static final ArrayTypeDefinition HEADER_FIELD_LIST_TYPE = new ArrayTypeDefinition(HEADER_FIELD_TYPE);
+
     private static final int MIN_HEADER_LENGTH =
             12 + // static header
             4 // 0 array length
             ;
+    private static final byte PROTOCOL_VERSION = 1;
 
     // flags
     private static final byte NO_REPLY_EXPECTED = 0x1;
@@ -40,13 +41,54 @@ public class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
     @Override
     protected void encode(ChannelHandlerContext ctx, MessageHeader msg, ByteBuf out)
             throws Exception {
+        AlignableByteBuf alignedBuf = new AlignableByteBuf(out, 0);
 
+        ByteOrder order = msg.getByteOrder();
+        if (order == null) { order = ByteOrder.BIG_ENDIAN; }
+        out.writeByte(order == ByteOrder.LITTLE_ENDIAN ? 'l' : 'B');
+        out.order(order);
+
+        out.writeByte(msg.getMessageType().getId());
+
+        byte flags = 0;
+        if (msg.isNoReplyExpected()) { flags |= NO_REPLY_EXPECTED; }
+        if (msg.isNoAutoStart()) { flags |= NO_AUTO_START; }
+        if (msg.isAllowInteractiveAuthorization()) { flags |= ALLOW_INTERACTIVE_AUTHORIZATION; }
+        out.writeByte(flags);
+
+        byte protocolVersion = msg.getMajorProtocolVersion();
+        if (protocolVersion == 0) { protocolVersion = PROTOCOL_VERSION; }
+        out.writeByte(protocolVersion);
+
+        out.writeInt((int) msg.getMessageBodyLength());
+
+        int serial = msg.getSerial();
+        if (serial == 0) { serial = Local.generateSerial(ctx); }
+        out.writeInt(serial);
+
+        ArrayObject headerObject = ArrayObject.create(
+                HEADER_FIELD_LIST_TYPE,
+                msg.getHeaderFields().entrySet().stream()
+                        .map(entry -> {
+                            BasicObject id = BasicObject.createByte(entry.getKey().getId());
+                            DbusObject value = entry.getValue();
+                            return StructObject.create(
+                                    HEADER_FIELD_TYPE,
+                                    Arrays.asList(id, value)
+                            );
+                        })
+                        .collect(Collectors.toList())
+        );
+
+        headerObject.serialize(alignedBuf);
+        alignedBuf.alignWrite(8);
     }
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf buf, List<Object> out)
             throws Exception {
         if (buf.readableBytes() < MIN_HEADER_LENGTH) { return; }
+        AlignableByteBuf alignedBuf = new AlignableByteBuf(buf, 0);
 
         buf.markReaderIndex();
         byte endianness = buf.readByte();
@@ -70,7 +112,7 @@ public class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
         }
         byte flags = buf.readByte();
         byte majorProtocolVersion = buf.readByte();
-        if (majorProtocolVersion != 1) {
+        if (majorProtocolVersion != PROTOCOL_VERSION) {
             throw new DecoderException("Unsupported major protocol version " + majorProtocolVersion);
         }
         long bodyLength = buf.readUnsignedInt();
@@ -89,7 +131,7 @@ public class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
 
         ArrayObject headers;
         try {
-            headers = HEADER_FIELD_LIST_TYPE.deserialize(new AlignableByteBuf(buf, 0));
+            headers = HEADER_FIELD_LIST_TYPE.deserialize(alignedBuf);
         } catch (IndexOutOfBoundsException e) {
             // not enough data
 
@@ -118,6 +160,11 @@ public class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
             if (!header.getHeaderFields().containsKey(required)) {
                 throw new DecoderException("Missing required header field " + required);
             }
+        }
+
+        if (!alignedBuf.canAlignRead(8)) {
+            buf.resetReaderIndex();
+            return;
         }
 
         out.add(header);
