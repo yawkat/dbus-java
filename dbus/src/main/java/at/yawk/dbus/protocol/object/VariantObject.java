@@ -12,10 +12,10 @@ import lombok.ToString;
 @EqualsAndHashCode
 @ToString
 public class VariantObject implements DbusObject {
-    private final DbusObject object;
+    private final DbusObject value;
 
-    VariantObject(DbusObject object) {
-        this.object = object;
+    VariantObject(DbusObject value) {
+        this.value = value;
     }
 
     @Override
@@ -23,8 +23,8 @@ public class VariantObject implements DbusObject {
         return VariantTypeDefinition.getInstance();
     }
 
-    public static VariantObject create(DbusObject object) {
-        return new VariantObject(object);
+    public static VariantObject create(DbusObject value) {
+        return new VariantObject(value);
     }
 
     public static VariantObject deserialize(AlignableByteBuf buf) {
@@ -40,8 +40,8 @@ public class VariantObject implements DbusObject {
 
     @Override
     public void serialize(AlignableByteBuf buf) {
-        BasicObject string = BasicObject.createString(BasicType.SIGNATURE, object.getType().serialize());
+        BasicObject string = BasicObject.createString(BasicType.SIGNATURE, value.getType().serialize());
         string.serialize(buf);
-        object.serialize(buf);
+        value.serialize(buf);
     }
 }

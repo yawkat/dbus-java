@@ -40,25 +40,77 @@ public abstract class BasicObject implements DbusObject {
     }
 
     /**
+     * Return this object cast to byte.
+     *
+     * @throws UnsupportedOperationException if this is not numeric type.
+     */
+    @Override
+    public byte byteValue() {
+        return (byte) longValue();
+    }
+
+    /**
+     * Return this object cast to short.
+     *
+     * @throws UnsupportedOperationException if this is not numeric type.
+     */
+    @Override
+    public short shortValue() {
+        return (short) longValue();
+    }
+
+    /**
+     * Return this object cast to int.
+     *
+     * @throws UnsupportedOperationException if this is not numeric type.
+     */
+    @Override
+    public int intValue() {
+        return (int) longValue();
+    }
+
+    /**
+     * Return this object cast to long.
+     *
+     * @throws UnsupportedOperationException if this is not numeric type.
+     */
+    @Override
+    public long longValue() {
+        return signedNumberValue().longValue();
+    }
+
+    /**
+     * Return this object cast to double.
+     *
+     * @throws UnsupportedOperationException if this is not numeric type.
+     */
+    @Override
+    public double doubleValue() {
+        return signedNumberValue().doubleValue();
+    }
+
+    /**
      * Get this object as a number. The returned may not be signed: For example, a {@link BasicType#UINT16}
      * with value {@code 0xffff} will return an {@link Integer} of value {@code 0xffff}.
      *
      * @throws UnsupportedOperationException if this is not numeric type.
      */
     public Number realNumberValue() throws UnsupportedOperationException {
-        throw new UnsupportedOperationException();
+        return signedNumberValue();
     }
 
     /**
      * @throws UnsupportedOperationException if this is not a {@link BasicType#BOOLEAN} type.
      */
-    public Boolean booleanValue() throws UnsupportedOperationException {
+    @Override
+    public boolean booleanValue() throws UnsupportedOperationException {
         throw new UnsupportedOperationException();
     }
 
     /**
      * @throws UnsupportedOperationException if this is not a {@link BasicType#isStringLike() string-like} type.
      */
+    @Override
     public String stringValue() throws UnsupportedOperationException {
         throw new UnsupportedOperationException();
     }
@@ -122,6 +174,16 @@ public abstract class BasicObject implements DbusObject {
 
             @Override
             public Number signedNumberValue() throws UnsupportedOperationException {
+                return value;
+            }
+
+            @Override
+            public Number realNumberValue() throws UnsupportedOperationException {
+                return value;
+            }
+
+            @Override
+            public double doubleValue() {
                 return value;
             }
         }

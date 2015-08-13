@@ -22,11 +22,21 @@ final class IntegerBasicObject extends BasicObject {
     }
 
     @Override
-    public Boolean booleanValue() throws UnsupportedOperationException {
+    public boolean booleanValue() throws UnsupportedOperationException {
         if (getType() == BasicType.BOOLEAN) {
             return value == BOOLEAN_TRUE;
         }
         return super.booleanValue();
+    }
+
+    @Override
+    public long longValue() {
+        return value;
+    }
+
+    @Override
+    public double doubleValue() {
+        return longValue();
     }
 
     @Override
