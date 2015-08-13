@@ -1,18 +1,32 @@
 package at.yawk.dbus.protocol.codec;
 
+import at.yawk.dbus.protocol.HeaderField;
 import at.yawk.dbus.protocol.MessageHeader;
 import at.yawk.dbus.protocol.MessageType;
+import at.yawk.dbus.protocol.object.AlignableByteBuf;
+import at.yawk.dbus.protocol.object.ArrayObject;
+import at.yawk.dbus.protocol.object.DbusObject;
+import at.yawk.dbus.protocol.type.ArrayTypeDefinition;
+import at.yawk.dbus.protocol.type.BasicType;
+import at.yawk.dbus.protocol.type.StructTypeDefinition;
+import at.yawk.dbus.protocol.type.VariantTypeDefinition;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageCodec;
 import io.netty.handler.codec.DecoderException;
 import java.nio.ByteOrder;
+import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.List;
 
 /**
  * @author yawkat
  */
 public class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
+    // the headers are an array of byte:variant structs
+    private static final ArrayTypeDefinition HEADER_FIELD_LIST_TYPE =
+            new ArrayTypeDefinition(new StructTypeDefinition(Arrays.asList(
+                    BasicType.BYTE, VariantTypeDefinition.getInstance())));
 
     // flags
     private static final byte NO_REPLY_EXPECTED = 0x1;
@@ -29,6 +43,7 @@ public class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
     protected void decode(ChannelHandlerContext ctx, ByteBuf buf, List<Object> out)
             throws Exception {
         if (buf.readableBytes() >= 12) {
+            buf.markReaderIndex();
             byte endianness = buf.readByte();
             ByteOrder order;
             switch (endianness) {
@@ -46,7 +61,7 @@ public class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
 
             MessageType type = MessageType.byId(buf.readByte());
             if (type == null) {
-                // todo: handle
+                assert false; // todo: skip message
             }
             byte flags = buf.readByte();
             byte majorProtocolVersion = buf.readByte();
@@ -65,6 +80,29 @@ public class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
             header.setMajorProtocolVersion(majorProtocolVersion);
             header.setMessageBodyLength(bodyLength);
             header.setSerial(serial);
+            header.setHeaderFields(new EnumMap<>(HeaderField.class));
+
+            ArrayObject headers = HEADER_FIELD_LIST_TYPE.deserialize(new AlignableByteBuf(buf, 0));
+            for (DbusObject struct : headers.getValues()) {
+                HeaderField field = HeaderField.byId(struct.get(0).byteValue());
+                if (field != null) {
+                    DbusObject value = struct.get(1).getValue();
+                    if (!value.getType().equals(field.getType())) {
+                        throw new DecoderException(
+                                "Invalid header type on " + field + ": got " + value.getType() + " but expected " +
+                                field.getType()
+                        );
+                    }
+                    header.getHeaderFields().put(field, value);
+                }
+            }
+
+            for (HeaderField required : type.getRequiredHeaders()) {
+                if (!header.getHeaderFields().containsKey(required)) {
+                    throw new DecoderException("Missing required header field " + required);
+                }
+            }
+
             out.add(header);
         }
     }

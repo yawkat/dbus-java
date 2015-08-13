@@ -82,7 +82,7 @@ public abstract class ArrayObject implements DbusObject {
 
     protected abstract int size();
 
-    protected abstract DbusObject get(int i);
+    public abstract DbusObject get(int i);
 
     private static final class SimpleArrayObject extends ArrayObject {
         private final List<DbusObject> values;
@@ -108,7 +108,7 @@ public abstract class ArrayObject implements DbusObject {
         }
 
         @Override
-        protected DbusObject get(int i) {
+        public DbusObject get(int i) {
             return values.get(i);
         }
     }

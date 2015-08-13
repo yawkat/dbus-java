@@ -36,6 +36,14 @@ public interface DbusObject {
     }
 
     /**
+     * @see ArrayObject#get(int)
+     * @see StructObject#get(int)
+     */
+    default DbusObject get(int i) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
      * @see DictObject#getEntries()
      */
     default Map<DbusObject, DbusObject> getEntries() {

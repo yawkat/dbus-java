@@ -61,4 +61,9 @@ public class StructObject implements DbusObject {
             value.serialize(buf);
         }
     }
+
+    @Override
+    public DbusObject get(int i) {
+        return getValues().get(i);
+    }
 }

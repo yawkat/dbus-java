@@ -18,5 +18,5 @@ public class MessageHeader {
     private byte majorProtocolVersion;
     private long messageBodyLength;
     private int serial;
-    private Map<HeaderField, DbusObject> headers;
+    private Map<HeaderField, DbusObject> headerFields;
 }
