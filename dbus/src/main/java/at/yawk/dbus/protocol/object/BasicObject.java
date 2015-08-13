@@ -2,8 +2,6 @@ package at.yawk.dbus.protocol.object;
 
 import at.yawk.dbus.protocol.type.BasicType;
 import at.yawk.dbus.protocol.type.TypeDefinition;
-import io.netty.buffer.Unpooled;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -111,7 +109,7 @@ public abstract class BasicObject implements DbusObject {
     }
 
     /**
-     * @throws UnsupportedOperationException if this is not a {@link BasicType#isStringLike() string-like} type.
+     * @throws UnsupportedOperationException if this is not a {@link BasicType#isStringLike()} type.
      */
     @Override
     public String stringValue() throws UnsupportedOperationException {
@@ -205,41 +203,27 @@ public abstract class BasicObject implements DbusObject {
      * Create a new dbus object of type {@link BasicType#STRING} with the given string value.
      */
     public static BasicObject createString(String value) {
-        return createString(BasicType.STRING, value);
-    }
-
-    /**
-     * Create a new dbus object of the given type with the given string value.
-     *
-     * @throws IllegalArgumentException if the given type is not {@link BasicType#isStringLike() string-like}.
-     * @throws IllegalArgumentException if the value contains a NUL character.
-     */
-    public static BasicObject createString(BasicType type, String value) {
-        if (!type.isStringLike()) {
-            throw new IllegalArgumentException("Type is not string-like");
-        }
-
-        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
-        for (byte e : bytes) {
-            if (e == 0) {
-                throw new IllegalArgumentException("Value may not contain NUL");
-            }
-        }
-        return new StringBasicObject(type, Unpooled.wrappedBuffer(bytes), value);
+        return new StringBasicObject(value);
     }
 
     public static BasicObject createSignature(List<TypeDefinition> definitions) {
         return SignatureObject.create(definitions);
     }
 
+    public static BasicObject createObjectPath(String path) {
+        return ObjectPathObject.create(path);
+    }
+
     public static BasicObject deserialize(BasicType type, AlignableByteBuf buf) {
-        if (type.isStringLike()) {
-            return StringBasicObject.deserialize0(type, buf);
+        if (type == BasicType.STRING) {
+            return StringBasicObject.deserialize(buf);
+        } else if (type == BasicType.SIGNATURE) {
+            return SignatureObject.deserialize(buf);
+        } else if (type == BasicType.OBJECT_PATH) {
+            return ObjectPathObject.deserialize(buf);
         } else if (type == BasicType.DOUBLE) {
             buf.alignRead(8);
             return createDouble(buf.readDouble());
-        } else if (type == BasicType.SIGNATURE) {
-            return SignatureObject.deserialize(buf);
         } else if (type.isNumeric()) {
             return IntegerBasicObject.deserialize0(type, buf);
         } else {

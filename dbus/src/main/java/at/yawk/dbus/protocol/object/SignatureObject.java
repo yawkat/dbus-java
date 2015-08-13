@@ -6,6 +6,7 @@ import at.yawk.dbus.protocol.type.TypeDefinition;
 import at.yawk.dbus.protocol.type.TypeParser;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
@@ -14,7 +15,7 @@ import lombok.ToString;
  */
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
-class SignatureObject extends BasicObject {
+public class SignatureObject extends BasicObject {
     private final List<TypeDefinition> definitions;
 
     SignatureObject(List<TypeDefinition> definitions) {
@@ -62,6 +63,13 @@ class SignatureObject extends BasicObject {
         buf.writeByte(bytes.length);
         buf.writeBytes(bytes);
         buf.writeByte('\0');
+    }
+
+    @Override
+    public String stringValue() throws UnsupportedOperationException {
+        return typeValue().stream()
+                .map(TypeDefinition::serialize)
+                .collect(Collectors.joining());
     }
 
     @Override

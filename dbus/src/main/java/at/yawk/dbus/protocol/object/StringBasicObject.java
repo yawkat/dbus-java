@@ -12,33 +12,29 @@ import lombok.ToString;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 class StringBasicObject extends BasicObject {
-    private final BasicType type;
-    private final ByteBuf bytes;
     private final String value;
 
-    public StringBasicObject(BasicType type, ByteBuf bytes, String value) {
-        super(type);
-        this.type = type;
-        this.bytes = bytes;
+    public StringBasicObject(String value) {
+        super(BasicType.STRING);
         this.value = value;
     }
 
-    static StringBasicObject deserialize0(BasicType type, AlignableByteBuf buf) {
-        assert type.isStringLike();
-            buf.alignRead(4);
+    static StringBasicObject deserialize(AlignableByteBuf buf) {
+        buf.alignRead(4);
         int len = Math.toIntExact(buf.readUnsignedInt());
         ByteBuf bts = buf.readBytes(len);
         if (buf.readByte() != 0) {
             throw new DeserializerException("String not properly NUL-terminated");
         }
-        return new StringBasicObject(type, bts, bts.toString(StandardCharsets.UTF_8));
+        return new StringBasicObject(bts.toString(StandardCharsets.UTF_8));
     }
 
     @Override
     public void serialize(AlignableByteBuf buf) {
         buf.alignWrite(4);
-        buf.writeInt(bytes.readableBytes());
-        buf.writeBytes(bytes.slice());
+        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        buf.writeInt(bytes.length);
+        buf.writeBytes(bytes);
         buf.writeByte(0);
     }
 
