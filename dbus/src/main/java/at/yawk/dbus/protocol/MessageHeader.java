@@ -1,7 +1,9 @@
 package at.yawk.dbus.protocol;
 
 import at.yawk.dbus.protocol.object.DbusObject;
+import at.yawk.dbus.protocol.object.SignatureObject;
 import java.nio.ByteOrder;
+import java.util.EnumMap;
 import java.util.Map;
 import lombok.Data;
 
@@ -10,6 +12,9 @@ import lombok.Data;
  */
 @Data
 public class MessageHeader {
+    /**
+     * Byte order of the message. Ignored for writing.
+     */
     private ByteOrder byteOrder;
     private MessageType messageType;
     private boolean noReplyExpected;
@@ -19,4 +24,14 @@ public class MessageHeader {
     private long messageBodyLength;
     private int serial;
     private Map<HeaderField, DbusObject> headerFields;
+
+    /**
+     * Add a header field, creating the header map if necessary.
+     */
+    public void addHeader(HeaderField field, DbusObject object) {
+        if (headerFields == null) {
+            headerFields = new EnumMap<>(HeaderField.class);
+        }
+        headerFields.put(field, object);
+    }
 }

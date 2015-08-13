@@ -75,7 +75,7 @@ class LoggingInboundAdapter extends ChannelHandlerAdapter {
             if ((i >= 'a' && i <= 'z') ||
                 (i >= 'A' && i <= 'Z') ||
                 (i >= '0' && i <= '9') ||
-                i == ' ') {
+                i == ' ' || i == '.' || i == '/') {
                 repr = Character.toString((char) i);
             } else if (i == 0) {
                 repr = "\\0";

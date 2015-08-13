@@ -15,9 +15,10 @@ public enum HeaderField {
     MEMBER(3, BasicType.STRING),
     ERROR_NAME(4, BasicType.STRING),
     REPLY_SERIAL(5, BasicType.UINT32),
-    SENDER(6, BasicType.STRING),
-    SIGNATURE(7, BasicType.SIGNATURE),
-    UNIX_FD_COUNT(8, BasicType.UINT32),;
+    DESTINATION(6, BasicType.STRING),
+    SENDER(7, BasicType.STRING),
+    SIGNATURE(8, BasicType.SIGNATURE),
+    UNIX_FD_COUNT(9, BasicType.UINT32),;
 
     private static final HeaderField[] BY_ID;
 

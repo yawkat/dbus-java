@@ -20,10 +20,16 @@ class IncomingMessageAdapter extends SimpleChannelInboundHandler<Object> {
     protected void messageReceived(ChannelHandlerContext ctx, Object msg) throws Exception {
         Attribute<MessageHeader> headerAttribute = ctx.attr(Local.CURRENT_HEADER);
         if (msg instanceof MessageHeader) {
-            if (consumer.requireAccept((MessageHeader) msg)) {
-                headerAttribute.set((MessageHeader) msg);
+            if (((MessageHeader) msg).getMessageBodyLength() == 0) {
+                DbusMessage message = new DbusMessage();
+                message.setHeader((MessageHeader) msg);
+                consumer.accept(message);
             } else {
-                headerAttribute.set(null);
+                if (consumer.requireAccept((MessageHeader) msg)) {
+                    headerAttribute.set((MessageHeader) msg);
+                } else {
+                    headerAttribute.set(null);
+                }
             }
         } else if (msg instanceof MessageBody) {
             MessageHeader header = headerAttribute.get();

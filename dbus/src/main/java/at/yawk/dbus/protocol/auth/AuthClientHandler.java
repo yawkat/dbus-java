@@ -57,7 +57,6 @@ class AuthClientHandler extends SimpleChannelInboundHandler<Command> {
     }
 
     private void ok(Channel channel, Ok ok) {
-        log.info("ok");
         channel.writeAndFlush(new Begin());
         completionFuture.setSuccess();
     }

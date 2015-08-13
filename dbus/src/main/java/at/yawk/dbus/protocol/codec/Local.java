@@ -32,7 +32,7 @@ interface Local {
             lastSerial = attr.get();
             serial = (lastSerial == null ? 0 : lastSerial) + 1;
             if (serial == 0) { serial = 1; }
-        } while (attr.compareAndSet(lastSerial, serial));
+        } while (!attr.compareAndSet(lastSerial, serial));
         return serial;
     }
 }

@@ -13,7 +13,6 @@ public class DbusMainProtocol extends ChannelHandlerAppender {
         add(new BodyDecoder());
         add(new BodyEncoder());
 
-        add(new OutgoingMessageAdapter());
         add(new IncomingMessageAdapter(consumer));
     }
 }

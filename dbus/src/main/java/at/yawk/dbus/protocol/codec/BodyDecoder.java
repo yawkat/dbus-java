@@ -37,15 +37,19 @@ class BodyDecoder extends ByteToMessageDecoder {
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
+        if (!in.isReadable()) { return; }
+
         MessageHeader header = ctx.attr(Local.CURRENT_HEADER).get();
         if (header == null) {
             if (!firstData) {
-                throw new DecoderException("Message marked to be skipped but already decoded some data");
+                throw new DecoderException("Message marked to be skipped but already decoded some data: " + in);
             }
 
             in.skipBytes(in.readableBytes());
             return;
         }
+
+        in = in.order(header.getByteOrder());
 
         if (firstData) {
             DbusObject signature = header.getHeaderFields().get(HeaderField.SIGNATURE);

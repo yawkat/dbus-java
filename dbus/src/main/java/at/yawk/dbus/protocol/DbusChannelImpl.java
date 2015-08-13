@@ -6,10 +6,12 @@ import io.netty.util.concurrent.GenericFutureListener;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author yawkat
  */
+@Slf4j
 @RequiredArgsConstructor
 class DbusChannelImpl implements DbusChannel {
     private final Channel channel;
@@ -22,7 +24,7 @@ class DbusChannelImpl implements DbusChannel {
 
     @Override
     public void write(DbusMessage message) {
-        channel.writeAndFlush(message);
+        channel.writeAndFlush(message, channel.voidPromise());
     }
 
     @Override

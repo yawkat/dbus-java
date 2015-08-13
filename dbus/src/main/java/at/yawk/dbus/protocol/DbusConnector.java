@@ -46,19 +46,21 @@ public class DbusConnector {
      * Connect to the dbus server at the given {@link SocketAddress}.
      */
     public DbusChannel connect(SocketAddress address) throws Exception {
+        Bootstrap localBootstrap = bootstrap.clone();
         if (Epoll.isAvailable()) {
-            bootstrap.group(new EpollEventLoopGroup());
+            localBootstrap.group(new EpollEventLoopGroup());
             if (address instanceof DomainSocketAddress) {
-                bootstrap.channel(EpollDomainSocketChannel.class);
+                localBootstrap.channel(EpollDomainSocketChannel.class);
             } else {
-                bootstrap.channel(EpollSocketChannel.class);
+                localBootstrap.channel(EpollSocketChannel.class);
             }
         } else {
-            bootstrap.group(new NioEventLoopGroup());
-            bootstrap.channel(NioSocketChannel.class);
+            localBootstrap.group(new NioEventLoopGroup());
+            localBootstrap.channel(NioSocketChannel.class);
         }
 
-        Channel channel = bootstrap.connect(address).sync().channel();
+        Channel channel = localBootstrap.connect(address).sync().channel();
+
         AuthClient authClient = new AuthClient();
         if (LoggingInboundAdapter.isEnabled()) {
             channel.pipeline().addLast(new LoggingInboundAdapter());

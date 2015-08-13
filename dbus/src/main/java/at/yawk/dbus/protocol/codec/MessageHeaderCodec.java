@@ -49,10 +49,8 @@ class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
             throws Exception {
         AlignableByteBuf alignedBuf = AlignableByteBuf.fromMessageBuffer(out);
 
-        ByteOrder order = msg.getByteOrder();
-        if (order == null) { order = ByteOrder.BIG_ENDIAN; }
+        ByteOrder order = out.order();
         out.writeByte(order == ByteOrder.LITTLE_ENDIAN ? 'l' : 'B');
-        out.order(order);
 
         out.writeByte(msg.getMessageType().getId());
 
@@ -72,6 +70,7 @@ class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
         if (serial == 0) { serial = Local.generateSerial(ctx); }
         out.writeInt(serial);
 
+        checkRequiredHeaderFieldsPresent(msg);
         ArrayObject headerObject = ArrayObject.create(
                 HEADER_FIELD_LIST_TYPE,
                 msg.getHeaderFields().entrySet().stream()
@@ -80,7 +79,7 @@ class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
                             DbusObject value = entry.getValue();
                             return StructObject.create(
                                     HEADER_FIELD_TYPE,
-                                    Arrays.asList(id, value)
+                                    Arrays.asList(id, VariantObject.create(value))
                             );
                         })
                         .collect(Collectors.toList())
@@ -122,7 +121,7 @@ class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
             throw new DecoderException("Unknown byte order byte " + endianness);
         }
 
-        buf.order(order);
+        buf = buf.order(order);
 
         @Nullable MessageType type = MessageType.byId(buf.readByte());
         byte flags = buf.readByte();
@@ -165,11 +164,7 @@ class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
         }
 
         if (type != null) {
-            for (HeaderField required : type.getRequiredHeaders()) {
-                if (!header.getHeaderFields().containsKey(required)) {
-                    throw new DecoderException("Missing required header field " + required);
-                }
-            }
+            checkRequiredHeaderFieldsPresent(header);
         }
 
         if (!alignedBuf.canAlignRead(8)) {
@@ -178,6 +173,14 @@ class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
         }
 
         out.add(header);
+    }
+
+    private void checkRequiredHeaderFieldsPresent(MessageHeader header) {
+        for (HeaderField required : header.getMessageType().getRequiredHeaders()) {
+            if (!header.getHeaderFields().containsKey(required)) {
+                throw new DecoderException("Missing required header field " + required);
+            }
+        }
     }
 
     /**

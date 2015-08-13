@@ -12,12 +12,13 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
 import java.util.ArrayList;
-import java.util.EnumMap;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author yawkat
  */
+@Slf4j
 class BodyEncoder extends MessageToMessageEncoder<DbusMessage> {
     @Override
     protected void encode(ChannelHandlerContext ctx, DbusMessage msg, List<Object> out) throws Exception {
@@ -35,12 +36,11 @@ class BodyEncoder extends MessageToMessageEncoder<DbusMessage> {
                 arg.serialize(aligned);
             }
 
-            if (header.getHeaderFields() == null) {
-                header.setHeaderFields(new EnumMap<>(HeaderField.class));
-            }
-            header.getHeaderFields().put(HeaderField.SIGNATURE, SignatureObject.create(types));
+            header.addHeader(HeaderField.SIGNATURE, SignatureObject.create(types));
             header.setMessageBodyLength(bodyBuffer.readableBytes());
             out.add(bodyBuffer);
+            log.trace("Body: {}", body);
         }
+        log.trace("Header: {}", header);
     }
 }

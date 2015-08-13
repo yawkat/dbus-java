@@ -3,13 +3,11 @@ package at.yawk.dbus.protocol.object;
 import at.yawk.dbus.protocol.type.BasicType;
 import java.nio.charset.StandardCharsets;
 import lombok.EqualsAndHashCode;
-import lombok.ToString;
 
 /**
  * @author yawkat
  */
 @EqualsAndHashCode(callSuper = true)
-@ToString(callSuper = true)
 public class ObjectPathObject extends BasicObject {
     private final byte[] bytes;
 
@@ -71,5 +69,9 @@ public class ObjectPathObject extends BasicObject {
         buf.writeInt(bytes.length);
         buf.writeBytes(bytes);
         buf.writeByte('\0');
+    }
+
+    public String toString() {
+        return "ObjectPathObject(" + stringValue() + ")";
     }
 }
