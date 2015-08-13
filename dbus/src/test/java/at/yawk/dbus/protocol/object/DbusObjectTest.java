@@ -50,6 +50,11 @@ public class DbusObjectTest {
         testSerialize(DictObject.create(type, values));
     }
 
+    @Test
+    public void testSerializeVariant() {
+        testSerialize(VariantObject.create(BasicObject.createInt32(10)));
+    }
+
     private static void testSerialize(DbusObject object) {
         for (int readerOffset = 0; readerOffset < 10; readerOffset++) {
             AlignableByteBuf buf = new AlignableByteBuf(Unpooled.buffer(), readerOffset);

@@ -13,6 +13,26 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class TypeParser {
     /**
+     * Parse a list of type definitions.
+     *
+     * @param string The type definition string representation.
+     * @return The parsed type definitions.
+     * @throws MalformedTypeDefinitionException if there are issues in the structure of the type definition
+     * @throws BufferUnderflowException         if the input sequence does not represent a full type definition
+     */
+    public static List<TypeDefinition> parseTypeDefinitions(CharSequence string)
+            throws MalformedTypeDefinitionException,
+                   BufferUnderflowException {
+        CharBuffer buffer = CharBuffer.wrap(string);
+
+        List<TypeDefinition> definitions = new ArrayList<>();
+        while (buffer.hasRemaining()) {
+            definitions.add(parseTypeDefinitionPart(buffer));
+        }
+        return definitions;
+    }
+
+    /**
      * Parse a type definition.
      *
      * @param string The type definition string representation.
@@ -49,8 +69,7 @@ public class TypeParser {
             buffer.get(); // skip )
             return new StructTypeDefinition(members);
         case 'v':
-            // todo
-            break;
+            return VariantTypeDefinition.getInstance();
         case 'a':
             // peek
             char following = peek(buffer);
