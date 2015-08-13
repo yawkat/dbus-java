@@ -18,10 +18,12 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author yawkat
  */
+@Slf4j
 class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
     // the headers are an array of byte:variant structs
     private static final StructTypeDefinition HEADER_FIELD_TYPE =
@@ -43,6 +45,10 @@ class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
      * How many bytes still need to be read in the current packet.
      */
     private long toRead;
+    /**
+     * Byte order to forward to the next decoders.
+     */
+    private ByteOrder byteOrder;
 
     @Override
     protected void encode(ChannelHandlerContext ctx, MessageHeader msg, ByteBuf out)
@@ -95,17 +101,17 @@ class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
         // forward some data to be decoded
         int forwarding = Math.toIntExact(Math.min(buf.readableBytes(), toRead));
         if (forwarding > 0) {
-            ByteBuf slice = buf.slice();
+            ByteBuf slice = buf.slice().order(byteOrder);
             slice.writerIndex(slice.readerIndex() + forwarding);
             slice.retain();
             out.add(slice);
 
             toRead -= forwarding;
+            log.trace("Forwarding {} bytes of body data ({} to go)", forwarding, toRead);
             buf.skipBytes(forwarding);
         }
 
         if (buf.readableBytes() < MIN_HEADER_LENGTH) { return; }
-        AlignableByteBuf alignedBuf = AlignableByteBuf.fromMessageBuffer(buf);
 
         buf.markReaderIndex();
         byte endianness = buf.readByte();
@@ -122,6 +128,7 @@ class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
         }
 
         buf = buf.order(order);
+        AlignableByteBuf alignedBuf = AlignableByteBuf.fromMessageBuffer(buf);
 
         @Nullable MessageType type = MessageType.byId(buf.readByte());
         byte flags = buf.readByte();
@@ -172,6 +179,8 @@ class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
             return;
         }
 
+        toRead = header.getMessageBodyLength();
+        byteOrder = order;
         out.add(header);
     }
 

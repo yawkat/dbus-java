@@ -2,6 +2,8 @@ package at.yawk.dbus.protocol.type;
 
 import at.yawk.dbus.protocol.object.AlignableByteBuf;
 import at.yawk.dbus.protocol.object.BasicObject;
+import at.yawk.dbus.protocol.object.DbusObject;
+import at.yawk.dbus.protocol.object.VariantObject;
 import java.util.Arrays;
 import javax.annotation.Nullable;
 import lombok.Getter;
@@ -26,7 +28,12 @@ public enum BasicType implements TypeDefinition {
     STRING('s', Const.LENGTH_STRING_LIKE),
     OBJECT_PATH('o', Const.LENGTH_STRING_LIKE),
     SIGNATURE('g', Const.LENGTH_STRING_LIKE),
-    VARIANT('v', Const.LENGTH_VARIANT),;
+    VARIANT('v', Const.LENGTH_VARIANT) {
+        @Override
+        public DbusObject deserialize(AlignableByteBuf buf) {
+            return VariantObject.deserialize(buf);
+        }
+    };
 
     private static final BasicType[] TYPES_BY_CODE;
 
@@ -62,7 +69,7 @@ public enum BasicType implements TypeDefinition {
     }
 
     @Override
-    public BasicObject deserialize(AlignableByteBuf buf) {
+    public DbusObject deserialize(AlignableByteBuf buf) {
         return BasicObject.deserialize(this, buf);
     }
 

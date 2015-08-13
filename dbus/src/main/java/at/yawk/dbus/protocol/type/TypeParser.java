@@ -7,10 +7,12 @@ import java.nio.CharBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author yawkat
  */
+@Slf4j
 @UtilityClass
 public class TypeParser {
     /**
@@ -59,6 +61,8 @@ public class TypeParser {
     private static TypeDefinition parseTypeDefinitionPart(CharBuffer buffer)
             throws MalformedTypeDefinitionException,
                    BufferUnderflowException {
+
+        log.trace("Parsing definition part {}", buffer);
 
         char code = buffer.get();
         switch (code) {

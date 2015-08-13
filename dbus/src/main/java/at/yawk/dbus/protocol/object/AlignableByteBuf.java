@@ -45,7 +45,7 @@ public class AlignableByteBuf extends WrappedByteBuf {
     }
 
     private static int calculateAlignmentOffset(int messageOffset, int position, int alignment) {
-        return alignment - ((messageOffset + position) % alignment);
+        return (alignment - ((messageOffset + position) % alignment)) % alignment;
     }
 
     private boolean canAlign(int alignment) {

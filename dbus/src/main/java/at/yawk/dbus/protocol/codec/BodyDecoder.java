@@ -12,17 +12,19 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.codec.DecoderException;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author yawkat
  */
+@Slf4j
 class BodyDecoder extends ByteToMessageDecoder {
     private boolean firstData;
     private List<TypeDefinition> types;
     private int currentTypeIndex;
     private List<DbusObject> bodyObjects;
     /**
-     * Offset of buffer[0] in the current body.
+     * Offset of buffer[readerIndex] in the current body.
      */
     private int bodyOffset;
 
@@ -37,6 +39,8 @@ class BodyDecoder extends ByteToMessageDecoder {
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
+        log.trace("Decode {}", in);
+
         if (!in.isReadable()) { return; }
 
         MessageHeader header = ctx.attr(Local.CURRENT_HEADER).get();
@@ -48,8 +52,6 @@ class BodyDecoder extends ByteToMessageDecoder {
             in.skipBytes(in.readableBytes());
             return;
         }
-
-        in = in.order(header.getByteOrder());
 
         if (firstData) {
             DbusObject signature = header.getHeaderFields().get(HeaderField.SIGNATURE);
@@ -66,7 +68,7 @@ class BodyDecoder extends ByteToMessageDecoder {
 
         int itemStart = in.readerIndex();
 
-        AlignableByteBuf aligned = AlignableByteBuf.fromOffsetBuffer(in, bodyOffset, 8);
+        AlignableByteBuf aligned = AlignableByteBuf.fromOffsetBuffer(in, bodyOffset - in.readerIndex(), 8);
         DbusObject object = MessageHeaderCodec.tryDecode(type, aligned);
         if (object == null) {
             in.readerIndex(itemStart);
@@ -76,6 +78,7 @@ class BodyDecoder extends ByteToMessageDecoder {
         bodyObjects.add(object);
         currentTypeIndex++;
         bodyOffset += in.readerIndex() - itemStart;
+        log.trace("cti {}", currentTypeIndex);
 
         if (currentTypeIndex >= types.size()) {
             MessageBody body = new MessageBody();

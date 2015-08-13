@@ -2,7 +2,6 @@ package at.yawk.dbus.protocol.type;
 
 import at.yawk.dbus.protocol.object.AlignableByteBuf;
 import at.yawk.dbus.protocol.object.ArrayObject;
-import at.yawk.dbus.protocol.object.DbusObject;
 import lombok.Value;
 
 /**

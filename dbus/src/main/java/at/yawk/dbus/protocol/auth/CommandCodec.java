@@ -4,9 +4,12 @@ import at.yawk.dbus.protocol.auth.command.*;
 import at.yawk.dbus.protocol.auth.command.Error;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufProcessor;
+import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.ByteToMessageCodec;
+import io.netty.channel.ChannelPromise;
+import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.codec.DecoderException;
+import io.netty.handler.codec.MessageToByteEncoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -17,7 +20,12 @@ import lombok.extern.slf4j.Slf4j;
  * @author yawkat
  */
 @Slf4j
-public class CommandCodec extends ByteToMessageCodec<Command> {
+public class CommandCodec extends ChannelHandlerAdapter {
+    /*
+     * This is a custom ChannelHandlerAdapter instead of a ByteToMessageCodec since ByteToMessageCodec has a bug
+     * (https://github.com/netty/netty/issues/4087) where it will discard data on removal from pipeline.
+     */
+
     private static final Charset CHARSET = StandardCharsets.US_ASCII;
     private static final byte[] CRLF = new byte[]{ '\r', '\n' };
     private static final Map<String, Function<List<String>, Command>> FACTORIES = new HashMap<>();
@@ -34,14 +42,25 @@ public class CommandCodec extends ByteToMessageCodec<Command> {
         FACTORIES.put(Rejected.NAME, Rejected::parse);
     }
 
-    @Override
+    private final ByteToMessageDecoder decoder = new ByteToMessageDecoder() {
+        @Override
+        protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
+            CommandCodec.this.decode(ctx, in, out);
+        }
+    };
+    private final MessageToByteEncoder<Command> encoder = new MessageToByteEncoder<Command>() {
+        @Override
+        protected void encode(ChannelHandlerContext ctx, Command msg, ByteBuf out) throws Exception {
+            CommandCodec.this.encode(ctx, msg, out);
+        }
+    };
+
     protected void encode(ChannelHandlerContext ctx, Command msg, ByteBuf out) throws Exception {
         out.writeBytes(msg.getSerialized().getBytes(CHARSET));
         out.writeBytes(CRLF);
         log.trace("Sent message {}", msg.getSerialized());
     }
 
-    @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
         int crlfPos = in.forEachByte(new CRLFFinder());
         if (crlfPos == -1) {
@@ -66,6 +85,26 @@ public class CommandCodec extends ByteToMessageCodec<Command> {
             }
             out.add(factory.apply(args));
         }
+    }
+
+    @Override
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        decoder.channelRead(ctx, msg);
+    }
+
+    @Override
+    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+        encoder.write(ctx, msg, promise);
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        decoder.channelInactive(ctx);
+    }
+
+    @Override
+    public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
+        decoder.handlerRemoved(ctx);
     }
 
     private static class CRLFFinder implements ByteBufProcessor {
