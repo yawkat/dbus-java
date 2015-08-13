@@ -82,7 +82,19 @@ public class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
             header.setSerial(serial);
             header.setHeaderFields(new EnumMap<>(HeaderField.class));
 
-            ArrayObject headers = HEADER_FIELD_LIST_TYPE.deserialize(new AlignableByteBuf(buf, 0));
+            ArrayObject headers;
+            try {
+                headers = HEADER_FIELD_LIST_TYPE.deserialize(new AlignableByteBuf(buf, 0));
+            } catch (IndexOutOfBoundsException e) {
+                // not enough data
+
+                // todo: don't catch such a broad exception
+                // hack: ignore list out of bounds etc.
+                if (e.getClass() != IndexOutOfBoundsException.class) { throw e; }
+
+                buf.resetReaderIndex();
+                return;
+            }
             for (DbusObject struct : headers.getValues()) {
                 HeaderField field = HeaderField.byId(struct.get(0).byteValue());
                 if (field != null) {
