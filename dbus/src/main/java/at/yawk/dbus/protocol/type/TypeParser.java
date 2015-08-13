@@ -13,14 +13,14 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class TypeParser {
     /**
-     * Parse a list of type definitions.
+     * Parse a type signature. Type signatures are essentially lists of zero or more type definitions.
      *
      * @param string The type definition string representation.
      * @return The parsed type definitions.
-     * @throws MalformedTypeDefinitionException if there are issues in the structure of the type definition
-     * @throws BufferUnderflowException         if the input sequence does not represent a full type definition
+     * @throws MalformedTypeDefinitionException if there are issues in the structure of the type signature
+     * @throws BufferUnderflowException         if the input sequence does not represent a full type signature
      */
-    public static List<TypeDefinition> parseTypeDefinitions(CharSequence string)
+    public static TypeSignature parseTypeSignature(CharSequence string)
             throws MalformedTypeDefinitionException,
                    BufferUnderflowException {
         CharBuffer buffer = CharBuffer.wrap(string);
@@ -29,7 +29,7 @@ public class TypeParser {
         while (buffer.hasRemaining()) {
             definitions.add(parseTypeDefinitionPart(buffer));
         }
-        return definitions;
+        return new TypeSignature(definitions);
     }
 
     /**
