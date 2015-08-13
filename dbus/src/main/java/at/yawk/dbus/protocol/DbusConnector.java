@@ -1,9 +1,6 @@
 package at.yawk.dbus.protocol;
 
-import at.yawk.dbus.protocol.auth.AuthAdapter;
-import at.yawk.dbus.protocol.auth.CommandCodec;
-import at.yawk.dbus.protocol.auth.DirectionValidatorAdapter;
-import at.yawk.dbus.protocol.auth.command.AuthDirection;
+import at.yawk.dbus.protocol.auth.AuthClient;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -20,9 +17,7 @@ import io.netty.util.concurrent.GenericFutureListener;
 import java.io.StringReader;
 import java.net.SocketAddress;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -70,34 +65,32 @@ public class DbusConnector {
         }
 
         channel = bootstrap.connect(address).sync().channel();
-        AuthAdapter authAdapter = new AuthAdapter();
+        AuthClient authClient = new AuthClient();
         if (LoggingInboundAdapter.isEnabled()) {
             channel.pipeline().addLast(new LoggingInboundAdapter());
         }
-        channel.pipeline()
-                .addLast(new CommandCodec())
-                .addLast(new DirectionValidatorAdapter(AuthDirection.FROM_SERVER, AuthDirection.FROM_CLIENT))
-                .addLast(authAdapter);
+
+        channel.pipeline().addLast("auth", authClient);
         channel.config().setAutoRead(true);
 
-        ChannelFuture completionPromise = authAdapter.startAuth(channel);
+        ChannelFuture completionPromise = authClient.startAuth(channel);
+        completionPromise.sync();
+        channel.pipeline().remove("auth");
     }
 
     public void connect(DbusAddress address) throws Exception {
         log.info("Connecting to dbus server at {}", address);
 
-        Map<String, String> properties = address.getProperties();
-
-        if (properties.containsKey("guid")) {
-            guid = DbusUtil.parseUuid(properties.get("guid"));
+        if (address.hasProperty("guid")) {
+            guid = DbusUtil.parseUuid(address.getProperty("guid"));
         }
 
         switch (address.getProtocol()) {
         case "unix":
-            if (properties.containsKey("path")) {
-                connect(new DomainSocketAddress(properties.get("path")));
-            } else if (properties.containsKey("abstract")) {
-                String path = properties.get("abstract");
+            if (address.hasProperty("path")) {
+                connect(new DomainSocketAddress(address.getProperty("path")));
+            } else if (address.hasProperty("abstract")) {
+                String path = address.getProperty("abstract");
 
                 // replace leading slash with \0 for abstract socket
                 if (!path.startsWith("/")) { throw new IllegalArgumentException("Illegal abstract path " + path); }
@@ -113,10 +106,6 @@ public class DbusConnector {
         }
     }
 
-    public void connectUnixDomainSocket(Path location) throws Exception {
-        connect(new DomainSocketAddress(location.toFile()));
-    }
-
     public void connectUser() throws Exception {
         String machineId = new String(Files.readAllBytes(Paths.get("/etc/machine-id"))).trim();
         String response = DbusUtil.callCommand("dbus-launch", "--autolaunch", machineId);
@@ -128,7 +117,7 @@ public class DbusConnector {
 
     public void connectSystem() throws Exception {
         // this is the default system socket location defined in dbus
-        connectUnixDomainSocket(Paths.get("/run/dbus/system_bus_socket"));
+        connect(DbusAddress.fromUnixSocket(Paths.get("/run/dbus/system_bus_socket")));
     }
 
     private static <V> CompletionStage<V> nettyFutureToStage(Future<V> future) {

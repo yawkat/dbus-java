@@ -1,8 +1,10 @@
 package at.yawk.dbus.protocol;
 
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import lombok.Value;
 
 /**
@@ -12,6 +14,16 @@ import lombok.Value;
 public class DbusAddress {
     private final String protocol;
     private final Map<String, String> properties;
+
+    public static Builder builder(String protocol) {
+        return new Builder(protocol);
+    }
+
+    public static DbusAddress fromUnixSocket(Path location) {
+        return builder("unix")
+                .property("path", location.toString())
+                .build();
+    }
 
     public static DbusAddress parse(String repr) {
         int protocolPart = repr.indexOf(':');
@@ -35,6 +47,16 @@ public class DbusAddress {
         return new DbusAddress(protocol, properties);
     }
 
+    public boolean hasProperty(String key) {
+        return properties.containsKey(key);
+    }
+
+    public String getProperty(String key) {
+        String value = properties.get(key);
+        if (value == null) { throw new NoSuchElementException(key); }
+        return value;
+    }
+
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder()
@@ -45,5 +67,23 @@ public class DbusAddress {
             builder.setLength(builder.length() - 1);
         }
         return builder.toString();
+    }
+
+    public static class Builder {
+        private final String protocol;
+        private final Map<String, String> properties = new HashMap<>();
+
+        Builder(String protocol) {
+            this.protocol = protocol;
+        }
+
+        public Builder property(String key, String value) {
+            properties.put(key, value);
+            return this;
+        }
+
+        public DbusAddress build() {
+            return new DbusAddress(protocol, properties);
+        }
     }
 }

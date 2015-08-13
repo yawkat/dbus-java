@@ -11,8 +11,13 @@ import lombok.extern.slf4j.Slf4j;
  * @author yawkat
  */
 @Slf4j
-public class AuthAdapter extends SimpleChannelInboundHandler<Command> {
+class AuthClientHandler extends SimpleChannelInboundHandler<Command> {
     private ChannelPromise completionFuture;
+
+    @Override
+    public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+        super.channelRegistered(ctx);
+    }
 
     @Override
     public boolean acceptInboundMessage(Object msg) throws Exception {
