@@ -1,5 +1,6 @@
 package at.yawk.dbus.protocol.type;
 
+import at.yawk.dbus.protocol.object.SignatureObject;
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.CharBuffer;
@@ -20,7 +21,7 @@ public class TypeParser {
      * @throws MalformedTypeDefinitionException if there are issues in the structure of the type signature
      * @throws BufferUnderflowException         if the input sequence does not represent a full type signature
      */
-    public static TypeSignature parseTypeSignature(CharSequence string)
+    public static SignatureObject parseTypeSignature(CharSequence string)
             throws MalformedTypeDefinitionException,
                    BufferUnderflowException {
         CharBuffer buffer = CharBuffer.wrap(string);
@@ -29,7 +30,7 @@ public class TypeParser {
         while (buffer.hasRemaining()) {
             definitions.add(parseTypeDefinitionPart(buffer));
         }
-        return new TypeSignature(definitions);
+        return SignatureObject.create(definitions);
     }
 
     /**

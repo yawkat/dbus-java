@@ -25,7 +25,7 @@ public class DbusObjectTest {
         testSerialize(BasicObject.createInt64(0x0fffffffffffL));
         testSerialize(BasicObject.createDouble(0.16682));
         testSerialize(BasicObject.createString("Test"));
-        testSerialize(BasicObject.createString(BasicType.SIGNATURE, "Test"));
+        testSerialize(SignatureObject.create(Arrays.asList(BasicType.INT16, BasicType.INT32)));
     }
 
     @Test

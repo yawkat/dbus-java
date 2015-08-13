@@ -1,6 +1,9 @@
 package at.yawk.dbus.protocol.object;
 
-import at.yawk.dbus.protocol.type.*;
+import at.yawk.dbus.protocol.type.MalformedTypeDefinitionException;
+import at.yawk.dbus.protocol.type.TypeDefinition;
+import at.yawk.dbus.protocol.type.TypeParser;
+import at.yawk.dbus.protocol.type.VariantTypeDefinition;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
@@ -28,10 +31,10 @@ public class VariantObject implements DbusObject {
     }
 
     public static VariantObject deserialize(AlignableByteBuf buf) {
-        BasicObject signature = StringBasicObject.deserialize(BasicType.SIGNATURE, buf);
+        String signature = SignatureObject.readSignatureString(buf);
         TypeDefinition type;
         try {
-            type = TypeParser.parseTypeDefinition(signature.stringValue());
+            type = TypeParser.parseTypeDefinition(signature);
         } catch (MalformedTypeDefinitionException e) {
             throw new DeserializerException(e);
         }
@@ -40,8 +43,7 @@ public class VariantObject implements DbusObject {
 
     @Override
     public void serialize(AlignableByteBuf buf) {
-        BasicObject string = BasicObject.createString(BasicType.SIGNATURE, value.getType().serialize());
-        string.serialize(buf);
+        SignatureObject.writeSignatureString(buf, value.getType().serialize());
         value.serialize(buf);
     }
 }

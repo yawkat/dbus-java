@@ -25,13 +25,8 @@ class StringBasicObject extends BasicObject {
 
     static StringBasicObject deserialize0(BasicType type, AlignableByteBuf buf) {
         assert type.isStringLike();
-        int len;
-        if (type == BasicType.SIGNATURE) {
-            len = buf.readByte() & 0xff;
-        } else {
             buf.alignRead(4);
-            len = Math.toIntExact(buf.readUnsignedInt());
-        }
+        int len = Math.toIntExact(buf.readUnsignedInt());
         ByteBuf bts = buf.readBytes(len);
         if (buf.readByte() != 0) {
             throw new DeserializerException("String not properly NUL-terminated");
@@ -41,12 +36,8 @@ class StringBasicObject extends BasicObject {
 
     @Override
     public void serialize(AlignableByteBuf buf) {
-        if (type == BasicType.SIGNATURE) {
-            buf.writeByte(bytes.readableBytes());
-        } else {
-            buf.alignWrite(4);
-            buf.writeInt(bytes.readableBytes());
-        }
+        buf.alignWrite(4);
+        buf.writeInt(bytes.readableBytes());
         buf.writeBytes(bytes.slice());
         buf.writeByte(0);
     }

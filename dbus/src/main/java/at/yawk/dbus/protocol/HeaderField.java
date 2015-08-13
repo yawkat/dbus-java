@@ -1,6 +1,7 @@
 package at.yawk.dbus.protocol;
 
 import at.yawk.dbus.protocol.type.BasicType;
+import at.yawk.dbus.protocol.type.SignatureTypeDefinition;
 import at.yawk.dbus.protocol.type.TypeDefinition;
 import java.util.Arrays;
 import javax.annotation.Nullable;
@@ -16,7 +17,7 @@ public enum HeaderField {
     ERROR_NAME(4, BasicType.STRING),
     REPLY_SERIAL(5, BasicType.UINT32),
     SENDER(6, BasicType.STRING),
-    SIGNATURE(7, BasicType.SIGNATURE),
+    SIGNATURE(7, SignatureTypeDefinition.getInstance()),
     UNIX_FD_COUNT(8, BasicType.UINT32),;
 
     private static final HeaderField[] BY_ID;

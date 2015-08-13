@@ -20,7 +20,7 @@ public class VariantTypeDefinition implements TypeDefinition {
     }
 
     @Override
-    public DbusObject deserialize(AlignableByteBuf buf) {
+    public VariantObject deserialize(AlignableByteBuf buf) {
         return VariantObject.deserialize(buf);
     }
 }

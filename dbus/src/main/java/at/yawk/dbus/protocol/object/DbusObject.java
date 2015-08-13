@@ -28,6 +28,13 @@ public interface DbusObject {
     }
 
     /**
+     * @see SignatureObject#getDefinitions()
+     */
+    default List<TypeDefinition> getDefinitions() {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
      * @see ArrayObject#getValues()
      * @see StructObject#getValues()
      */
