@@ -7,6 +7,9 @@ import javax.annotation.Nullable;
 import lombok.Getter;
 
 /**
+ * Basic types are types that are represented by a single ascii character in the dbus protocol. <i>This includes
+ * {@link #VARIANT}</i>
+ *
  * @author yawkat
  */
 public enum BasicType implements TypeDefinition {
@@ -21,7 +24,9 @@ public enum BasicType implements TypeDefinition {
     DOUBLE('d', 8),
     UNIX_FD('h', 4),
     STRING('s', Const.LENGTH_STRING_LIKE),
-    OBJECT_PATH('o', Const.LENGTH_STRING_LIKE),;
+    OBJECT_PATH('o', Const.LENGTH_STRING_LIKE),
+    SIGNATURE('g', Const.LENGTH_STRING_LIKE),
+    VARIANT('v', Const.LENGTH_VARIANT),;
 
     private static final BasicType[] TYPES_BY_CODE;
 
@@ -65,6 +70,10 @@ public enum BasicType implements TypeDefinition {
         return length == Const.LENGTH_STRING_LIKE;
     }
 
+    public boolean isNumeric() {
+        return length >= 0;
+    }
+
     /**
      * Get the fixed length of this type in bytes.
      *
@@ -78,5 +87,6 @@ public enum BasicType implements TypeDefinition {
 
     private static class Const {
         private static final int LENGTH_STRING_LIKE = -1;
+        private static final int LENGTH_VARIANT = -2;
     }
 }

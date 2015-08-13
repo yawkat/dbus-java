@@ -7,7 +7,6 @@ import at.yawk.dbus.protocol.object.*;
 import at.yawk.dbus.protocol.type.ArrayTypeDefinition;
 import at.yawk.dbus.protocol.type.BasicType;
 import at.yawk.dbus.protocol.type.StructTypeDefinition;
-import at.yawk.dbus.protocol.type.VariantTypeDefinition;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageCodec;
@@ -24,7 +23,7 @@ import java.util.stream.Collectors;
 public class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
     // the headers are an array of byte:variant structs
     private static final StructTypeDefinition HEADER_FIELD_TYPE =
-            new StructTypeDefinition(Arrays.asList(BasicType.BYTE, VariantTypeDefinition.getInstance()));
+            new StructTypeDefinition(Arrays.asList(BasicType.BYTE, BasicType.VARIANT));
     private static final ArrayTypeDefinition HEADER_FIELD_LIST_TYPE = new ArrayTypeDefinition(HEADER_FIELD_TYPE);
 
     private static final int MIN_HEADER_LENGTH =

@@ -1,9 +1,9 @@
 package at.yawk.dbus.protocol.object;
 
+import at.yawk.dbus.protocol.type.BasicType;
 import at.yawk.dbus.protocol.type.MalformedTypeDefinitionException;
 import at.yawk.dbus.protocol.type.TypeDefinition;
 import at.yawk.dbus.protocol.type.TypeParser;
-import at.yawk.dbus.protocol.type.VariantTypeDefinition;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
@@ -23,7 +23,7 @@ public class VariantObject implements DbusObject {
 
     @Override
     public TypeDefinition getType() {
-        return VariantTypeDefinition.getInstance();
+        return BasicType.VARIANT;
     }
 
     public static VariantObject create(DbusObject value) {

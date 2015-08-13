@@ -1,14 +1,17 @@
 package at.yawk.dbus.protocol.object;
 
 import at.yawk.dbus.protocol.type.BasicType;
+import at.yawk.dbus.protocol.type.TypeDefinition;
 import io.netty.buffer.Unpooled;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 
 /**
- * DbusObject extension for {@link BasicType}s.
+ * Basic objects are objects that do not enclose other dbus objects. <i>This does not include
+ * {@link VariantObject}s.</i>
  *
  * @author yawkat
  */
@@ -115,6 +118,14 @@ public abstract class BasicObject implements DbusObject {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * @throws UnsupportedOperationException if this is not a {@link BasicType#SIGNATURE} type.
+     */
+    @Override
+    public List<TypeDefinition> typeValue() {
+        throw new UnsupportedOperationException();
+    }
+
     ///// FACTORIES /////
 
     /**
@@ -217,14 +228,22 @@ public abstract class BasicObject implements DbusObject {
         return new StringBasicObject(type, Unpooled.wrappedBuffer(bytes), value);
     }
 
+    public static BasicObject createSignature(List<TypeDefinition> definitions) {
+        return SignatureObject.create(definitions);
+    }
+
     public static BasicObject deserialize(BasicType type, AlignableByteBuf buf) {
         if (type.isStringLike()) {
             return StringBasicObject.deserialize0(type, buf);
         } else if (type == BasicType.DOUBLE) {
             buf.alignRead(8);
             return createDouble(buf.readDouble());
-        } else {
+        } else if (type == BasicType.SIGNATURE) {
+            return SignatureObject.deserialize(buf);
+        } else if (type.isNumeric()) {
             return IntegerBasicObject.deserialize0(type, buf);
+        } else {
+            throw new UnsupportedOperationException(type + " cannot be deserialized to a basic object");
         }
     }
 }

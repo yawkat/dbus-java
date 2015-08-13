@@ -1,25 +1,24 @@
 package at.yawk.dbus.protocol.object;
 
+import at.yawk.dbus.protocol.type.BasicType;
 import at.yawk.dbus.protocol.type.MalformedTypeDefinitionException;
-import at.yawk.dbus.protocol.type.SignatureTypeDefinition;
 import at.yawk.dbus.protocol.type.TypeDefinition;
 import at.yawk.dbus.protocol.type.TypeParser;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.ToString;
 
 /**
  * @author yawkat
  */
-@Getter
-@EqualsAndHashCode
-@ToString
-public class SignatureObject implements DbusObject {
+@EqualsAndHashCode(callSuper = true)
+@ToString(callSuper = true)
+class SignatureObject extends BasicObject {
     private final List<TypeDefinition> definitions;
 
     SignatureObject(List<TypeDefinition> definitions) {
+        super(BasicType.SIGNATURE);
         this.definitions = definitions;
     }
 
@@ -27,12 +26,7 @@ public class SignatureObject implements DbusObject {
         return new SignatureObject(definitions);
     }
 
-    @Override
-    public TypeDefinition getType() {
-        return SignatureTypeDefinition.getInstance();
-    }
-
-    public static SignatureObject deserialize(AlignableByteBuf buf) {
+    public static BasicObject deserialize(AlignableByteBuf buf) {
         String def = readSignatureString(buf);
         try {
             return TypeParser.parseTypeSignature(def);
@@ -68,5 +62,10 @@ public class SignatureObject implements DbusObject {
         buf.writeByte(bytes.length);
         buf.writeBytes(bytes);
         buf.writeByte('\0');
+    }
+
+    @Override
+    public List<TypeDefinition> typeValue() {
+        return definitions;
     }
 }
