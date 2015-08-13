@@ -73,8 +73,10 @@ public abstract class ArrayObject implements DbusObject {
 
         buf.alignWrite(4);
         buf.writeInt(tempBuffer.writerIndex());
-        buf.alignWrite(8);
-        buf.writeBytes(tempBuffer);
+        if (tempBuffer.isReadable()) {
+            buf.alignWrite(8);
+            buf.writeBytes(tempBuffer);
+        }
         tempBuffer.release();
     }
 

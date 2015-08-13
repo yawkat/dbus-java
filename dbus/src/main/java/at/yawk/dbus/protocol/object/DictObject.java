@@ -62,8 +62,10 @@ public class DictObject implements DbusObject {
 
         buf.alignWrite(8);
         buf.writeInt(tempBuffer.writerIndex());
-        buf.alignWrite(8);
-        buf.writeBytes(tempBuffer);
+        if (tempBuffer.isReadable()) {
+            buf.alignWrite(8);
+            buf.writeBytes(tempBuffer);
+        }
 
         tempBuffer.release();
     }
