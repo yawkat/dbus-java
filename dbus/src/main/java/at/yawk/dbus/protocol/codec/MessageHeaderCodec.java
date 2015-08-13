@@ -7,6 +7,7 @@ import at.yawk.dbus.protocol.object.*;
 import at.yawk.dbus.protocol.type.ArrayTypeDefinition;
 import at.yawk.dbus.protocol.type.BasicType;
 import at.yawk.dbus.protocol.type.StructTypeDefinition;
+import at.yawk.dbus.protocol.type.TypeDefinition;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageCodec;
@@ -16,11 +17,12 @@ import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 
 /**
  * @author yawkat
  */
-public class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
+class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
     // the headers are an array of byte:variant structs
     private static final StructTypeDefinition HEADER_FIELD_TYPE =
             new StructTypeDefinition(Arrays.asList(BasicType.BYTE, BasicType.VARIANT));
@@ -36,6 +38,11 @@ public class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
     private static final byte NO_REPLY_EXPECTED = 0x1;
     private static final byte NO_AUTO_START = 0x2;
     private static final byte ALLOW_INTERACTIVE_AUTHORIZATION = 0x4;
+
+    /**
+     * How many bytes still need to be read in the current packet.
+     */
+    private long toRead;
 
     @Override
     protected void encode(ChannelHandlerContext ctx, MessageHeader msg, ByteBuf out)
@@ -86,6 +93,18 @@ public class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf buf, List<Object> out)
             throws Exception {
+        // forward some data to be decoded
+        int forwarding = Math.toIntExact(Math.min(buf.readableBytes(), toRead));
+        if (forwarding > 0) {
+            ByteBuf slice = buf.slice();
+            slice.writerIndex(slice.readerIndex() + forwarding);
+            slice.retain();
+            out.add(slice);
+
+            toRead -= forwarding;
+            buf.skipBytes(forwarding);
+        }
+
         if (buf.readableBytes() < MIN_HEADER_LENGTH) { return; }
         AlignableByteBuf alignedBuf = AlignableByteBuf.fromMessageBuffer(buf);
 
@@ -105,10 +124,7 @@ public class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
 
         buf.order(order);
 
-        MessageType type = MessageType.byId(buf.readByte());
-        if (type == null) {
-            assert false; // todo: skip message
-        }
+        @Nullable MessageType type = MessageType.byId(buf.readByte());
         byte flags = buf.readByte();
         byte majorProtocolVersion = buf.readByte();
         if (majorProtocolVersion != PROTOCOL_VERSION) {
@@ -128,16 +144,9 @@ public class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
         header.setSerial(serial);
         header.setHeaderFields(new EnumMap<>(HeaderField.class));
 
-        ArrayObject headers;
-        try {
-            headers = HEADER_FIELD_LIST_TYPE.deserialize(alignedBuf);
-        } catch (IndexOutOfBoundsException e) {
+        ArrayObject headers = (ArrayObject) tryDecode(HEADER_FIELD_LIST_TYPE, alignedBuf);
+        if (headers == null) {
             // not enough data
-
-            // todo: don't catch such a broad exception
-            // hack: ignore list out of bounds etc.
-            if (e.getClass() != IndexOutOfBoundsException.class) { throw e; }
-
             buf.resetReaderIndex();
             return;
         }
@@ -155,9 +164,11 @@ public class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
             }
         }
 
-        for (HeaderField required : type.getRequiredHeaders()) {
-            if (!header.getHeaderFields().containsKey(required)) {
-                throw new DecoderException("Missing required header field " + required);
+        if (type != null) {
+            for (HeaderField required : type.getRequiredHeaders()) {
+                if (!header.getHeaderFields().containsKey(required)) {
+                    throw new DecoderException("Missing required header field " + required);
+                }
             }
         }
 
@@ -167,5 +178,23 @@ public class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
         }
 
         out.add(header);
+    }
+
+    /**
+     * @return the decoded object or {@code null} if we need more data.
+     */
+    @Nullable
+    static DbusObject tryDecode(TypeDefinition definition, AlignableByteBuf buf) {
+        try {
+            return definition.deserialize(buf);
+        } catch (IndexOutOfBoundsException e) {
+            // not enough data
+
+            // todo: don't catch such a broad exception
+            // hack: ignore list out of bounds etc.
+            if (e.getClass() != IndexOutOfBoundsException.class) { throw e; }
+
+            return null;
+        }
     }
 }

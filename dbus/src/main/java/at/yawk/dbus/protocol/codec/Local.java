@@ -1,5 +1,6 @@
 package at.yawk.dbus.protocol.codec;
 
+import at.yawk.dbus.protocol.MessageHeader;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
@@ -16,6 +17,10 @@ interface Local {
      * The last message serial.
      */
     AttributeKey<Integer> LAST_SERIAL = AttributeKey.newInstance(PREFIX + "serial");
+    /**
+     * The current decoding header. If this is unset or null, the current data should not be decoded.
+     */
+    AttributeKey<MessageHeader> CURRENT_HEADER = AttributeKey.newInstance(PREFIX + "header");
 
     /**
      * Generate a serial for the given channel.

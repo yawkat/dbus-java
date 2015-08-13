@@ -9,7 +9,21 @@ public class DbusConnectorTest {
     @Test
     public void testDefault() throws Exception {
         DbusConnector connector = new DbusConnector();
-        connector.connectSystem();
-        connector.getChannel().closeFuture().sync();
+        /*
+        connector.setInitialConsumer(new MessageConsumer() {
+            @Override
+            public boolean requireAccept(MessageHeader header) {
+                return false;
+            }
+
+            @Override
+            public void accept(DbusMessage message) {
+
+            }
+        });
+        */
+
+        DbusChannel channel = connector.connectSystem();
+        channel.closeStage().toCompletableFuture().get();
     }
 }

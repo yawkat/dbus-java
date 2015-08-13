@@ -35,6 +35,15 @@ public class AlignableByteBuf extends WrappedByteBuf {
         return new AlignableByteBuf(buffer, 0, existingAlignment);
     }
 
+    /**
+     * Create a new {@link AlignableByteBuf} from a buffer that is known to be at a given offset of a known alignment.
+     *
+     * @param existingAlignment the alignment buffer - offset.
+     */
+    public static AlignableByteBuf fromOffsetBuffer(ByteBuf buffer, int offset, int existingAlignment) {
+        return new AlignableByteBuf(buffer, offset, existingAlignment);
+    }
+
     private static int calculateAlignmentOffset(int messageOffset, int position, int alignment) {
         return alignment - ((messageOffset + position) % alignment);
     }
