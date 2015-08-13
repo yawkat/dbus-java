@@ -96,7 +96,7 @@ public abstract class ArrayObject implements DbusObject {
 
         @Override
         protected ByteBuf serializeValues(ByteBufAllocator allocator) {
-            AlignableByteBuf tempBuffer = new AlignableByteBuf(allocator.buffer(), 0);
+            AlignableByteBuf tempBuffer = AlignableByteBuf.fromAlignedBuffer(allocator.buffer(), 8);
             for (DbusObject value : values) {
                 // we align to the 8-byte-mark later so we don't need to pass anything but 0
                 value.serialize(tempBuffer);

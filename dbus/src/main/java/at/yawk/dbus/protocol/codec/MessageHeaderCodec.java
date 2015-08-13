@@ -41,7 +41,7 @@ public class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
     @Override
     protected void encode(ChannelHandlerContext ctx, MessageHeader msg, ByteBuf out)
             throws Exception {
-        AlignableByteBuf alignedBuf = new AlignableByteBuf(out, 0);
+        AlignableByteBuf alignedBuf = AlignableByteBuf.fromMessageBuffer(out);
 
         ByteOrder order = msg.getByteOrder();
         if (order == null) { order = ByteOrder.BIG_ENDIAN; }
@@ -88,7 +88,7 @@ public class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
     protected void decode(ChannelHandlerContext ctx, ByteBuf buf, List<Object> out)
             throws Exception {
         if (buf.readableBytes() < MIN_HEADER_LENGTH) { return; }
-        AlignableByteBuf alignedBuf = new AlignableByteBuf(buf, 0);
+        AlignableByteBuf alignedBuf = AlignableByteBuf.fromMessageBuffer(buf);
 
         buf.markReaderIndex();
         byte endianness = buf.readByte();
