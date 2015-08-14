@@ -14,14 +14,7 @@ import java.util.concurrent.CompletionStage;
 public class AnonymousAuthMechanism implements AuthMechanism {
     @Override
     public CompletionStage<?> startAuth(AuthChannel channel) throws Exception {
-        return channel.send(new Auth())
-                .thenCompose(cmd -> {
-                    if (cmd instanceof Rejected) {
-                        return channel.send(new Auth("ANONYMOUS", null));
-                    } else {
-                        throw new UnexpectedCommandException(cmd);
-                    }
-                })
+        return channel.send(new Auth("ANONYMOUS", null))
                 .thenAccept(cmd -> {
                     MechanismException.handleCommand(cmd);
                     if (cmd instanceof Ok) {
