@@ -1,12 +1,9 @@
 package at.yawk.dbus.protocol;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.NoSuchElementException;
+import java.util.*;
 import lombok.Value;
 
 /**
@@ -14,8 +11,20 @@ import lombok.Value;
  */
 @Value
 public class DbusAddress {
+    private static final byte[] UNESCAPED_CHARS;
+
+    static {
+        UNESCAPED_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ012345789_-/.\\"
+                .getBytes(StandardCharsets.US_ASCII);
+        Arrays.sort(UNESCAPED_CHARS);
+    }
+
     private final String protocol;
     private final Map<String, String> properties;
+
+    private static boolean mustEscape(byte b) {
+        return Arrays.binarySearch(UNESCAPED_CHARS, b) < 0;
+    }
 
     public static Builder builder(String protocol) {
         return new Builder(protocol);
@@ -47,7 +56,7 @@ public class DbusAddress {
             i = valueSep + 1;
             int entrySep = repr.indexOf(',', i);
             String value = repr.substring(i, entrySep == -1 ? repr.length() : entrySep);
-            properties.put(key, value);
+            properties.put(unescape(key), unescape(value));
 
             if (entrySep == -1) { break; }
             i = entrySep + 1;
@@ -70,10 +79,40 @@ public class DbusAddress {
     public String toString() {
         StringBuilder builder = new StringBuilder()
                 .append(protocol).append(':');
-        properties.forEach((k, v) -> builder.append(k).append('=').append(v).append(','));
+        properties.forEach((k, v) -> builder.append(escape(k)).append('=').append(escape(v)).append(','));
         if (!properties.isEmpty()) {
             // remove trailing ,
             builder.setLength(builder.length() - 1);
+        }
+        return builder.toString();
+    }
+
+    static String unescape(String s) {
+        byte[] bytes = s.getBytes(StandardCharsets.US_ASCII);
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < bytes.length; i++) {
+            byte b = bytes[i];
+            if (b == '%') {
+                String code = "" + (char) bytes[++i] + (char) bytes[++i];
+                builder.append((char) Integer.parseInt(code, 16));
+            } else {
+                builder.append((char) b);
+            }
+        }
+        return builder.toString();
+    }
+
+    static String escape(String s) {
+        byte[] bytes = s.getBytes(StandardCharsets.US_ASCII);
+        StringBuilder builder = new StringBuilder();
+        for (byte b : bytes) {
+            if (mustEscape(b)) {
+                builder.append('%');
+                if ((b & 0xff) < 0x10) { builder.append('0'); }
+                builder.append(Integer.toHexString(b & 0xff));
+            } else {
+                builder.append((char) b);
+            }
         }
         return builder.toString();
     }
