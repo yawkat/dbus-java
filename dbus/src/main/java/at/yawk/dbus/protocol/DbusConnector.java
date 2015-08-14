@@ -1,21 +1,20 @@
 package at.yawk.dbus.protocol;
 
 import at.yawk.dbus.protocol.auth.AuthClient;
+import at.yawk.dbus.protocol.auth.mechanism.AnonymousAuthMechanism;
 import at.yawk.dbus.protocol.auth.mechanism.AuthMechanism;
-import at.yawk.dbus.protocol.auth.mechanism.ExternalFdAuthMechanism;
 import at.yawk.dbus.protocol.codec.DbusMainProtocol;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.epoll.Epoll;
 import io.netty.channel.epoll.EpollDomainSocketChannel;
 import io.netty.channel.epoll.EpollEventLoopGroup;
-import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.channel.unix.DomainSocketAddress;
 import java.io.StringReader;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -50,13 +49,9 @@ public class DbusConnector {
      */
     public DbusChannel connect(SocketAddress address) throws Exception {
         Bootstrap localBootstrap = bootstrap.clone();
-        if (Epoll.isAvailable()) {
+        if (address instanceof DomainSocketAddress) {
             localBootstrap.group(new EpollEventLoopGroup());
-            if (address instanceof DomainSocketAddress) {
-                localBootstrap.channel(EpollDomainSocketChannel.class);
-            } else {
-                localBootstrap.channel(EpollSocketChannel.class);
-            }
+            localBootstrap.channel(EpollDomainSocketChannel.class);
         } else {
             localBootstrap.group(new NioEventLoopGroup());
             localBootstrap.channel(NioSocketChannel.class);
@@ -71,17 +66,19 @@ public class DbusConnector {
 
         channel.pipeline().addLast("auth", authClient);
         channel.config().setAutoRead(true);
+        log.trace("Pipeline is now {}", channel.pipeline());
 
         // I really don't get why dbus does this
         channel.write(Unpooled.wrappedBuffer(new byte[]{ 0 }));
 
-        AuthMechanism mechanism = new ExternalFdAuthMechanism();
+        AuthMechanism mechanism = new AnonymousAuthMechanism();
         CompletionStage<?> completionPromise = authClient.startAuth(channel, mechanism);
-        completionPromise.toCompletableFuture().get();
-        channel.pipeline().remove("auth");
 
         SwappableMessageConsumer swappableConsumer = new SwappableMessageConsumer(initialConsumer);
-        channel.pipeline().addLast(new DbusMainProtocol(swappableConsumer));
+        completionPromise.toCompletableFuture().thenRun(() -> {
+            channel.pipeline().replace("auth", "main", new DbusMainProtocol(swappableConsumer));
+            log.trace("Pipeline is now {}", channel.pipeline());
+        }).get();
 
         return new DbusChannelImpl(channel, swappableConsumer);
     }
@@ -104,6 +101,10 @@ public class DbusConnector {
             } else {
                 throw new IllegalArgumentException("Neither path nor abstract given in dbus url");
             }
+        case "tcp":
+            String host = address.getProperty("host");
+            int port = Integer.parseInt(address.getProperty("port"));
+            return connect(new InetSocketAddress(host, port));
         default:
             throw new UnsupportedOperationException("Unsupported protocol " + address.getProtocol());
         }

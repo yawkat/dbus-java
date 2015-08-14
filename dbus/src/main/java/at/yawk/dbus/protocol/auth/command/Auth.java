@@ -18,7 +18,10 @@ public class Auth extends Command {
     @Nullable private final byte[] initialResponse;
 
     public Auth(@Nullable String mechanism, @Nullable byte[] initialResponse) {
-        super(AuthDirection.FROM_CLIENT, NAME, mechanism, DatatypeConverter.printHexBinary(initialResponse));
+        super(AuthDirection.FROM_CLIENT,
+              NAME,
+              mechanism,
+              initialResponse == null ? null : DatatypeConverter.printHexBinary(initialResponse));
         if (mechanism == null && initialResponse != null) {
             throw new IllegalArgumentException("initialResponse requires mechanism");
         }

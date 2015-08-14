@@ -6,6 +6,7 @@ import at.yawk.dbus.protocol.auth.UnexpectedCommandException;
 import at.yawk.dbus.protocol.auth.command.Auth;
 import at.yawk.dbus.protocol.auth.command.Begin;
 import at.yawk.dbus.protocol.auth.command.Ok;
+import at.yawk.dbus.protocol.auth.command.Rejected;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -17,10 +18,9 @@ public class ExternalFdAuthMechanism implements AuthMechanism {
         String uid = DbusUtil.callCommand("id", "-u").trim();
         assert uid.matches("\\d+");
         return channel.send(new Auth("EXTERNAL", uid.getBytes())).thenAccept(cmd -> {
+            MechanismException.handleCommand(cmd);
             if (cmd instanceof Ok) {
                 channel.send(new Begin());
-            } else if (cmd instanceof at.yawk.dbus.protocol.auth.command.Error) {
-                throw new MechanismException((at.yawk.dbus.protocol.auth.command.Error) cmd);
             } else {
                 throw new UnexpectedCommandException(cmd);
             }

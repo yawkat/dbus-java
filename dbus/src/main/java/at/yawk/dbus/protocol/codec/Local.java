@@ -14,7 +14,11 @@ import java.nio.ByteOrder;
 interface Local {
     String PREFIX = Local.class.getName() + '.';
 
-    ByteOrder OUTBOUND_ORDER = ByteOrder.LITTLE_ENDIAN;
+    /**
+     * Byte order to use for outbound messages. Using {@link ByteOrder#BIG_ENDIAN} because netty buffers follow this
+     * order by default.
+     */
+    ByteOrder OUTBOUND_ORDER = ByteOrder.BIG_ENDIAN;
 
     /**
      * The last message serial.

@@ -7,7 +7,6 @@ import at.yawk.dbus.protocol.auth.command.NegotiateUnixFd;
 import at.yawk.dbus.protocol.auth.command.Ok;
 import at.yawk.dbus.protocol.codec.DbusMainProtocol;
 import at.yawk.dbus.protocol.object.BasicObject;
-import at.yawk.dbus.protocol.object.ObjectPathObject;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -17,6 +16,7 @@ import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollServerDomainSocketChannel;
 import io.netty.channel.unix.DomainSocketAddress;
 import java.io.File;
+import java.net.InetSocketAddress;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
@@ -29,23 +29,26 @@ import org.testng.annotations.Test;
 public class DbusConnectorTest {
     @Test//(enabled = false)
     public void testDefault() throws Exception {
-        DbusChannel channel =
-                new DbusConnector().connectSystem();//.connect(DbusAddress.fromUnixSocket(Paths.get("test")));
+        DbusChannel channel = new DbusConnector().connect(
+                DbusAddress.fromTcpAddress(new InetSocketAddress("localhost", 10000))
+        );
 
-        DbusMessage message = new DbusMessage();
+        channel.write(MessageFactory.methodCall(
+                "/org/freedesktop/DBus",
+                null,
+                "org.freedesktop.DBus",
+                "Hello"
+        ));
 
-        MessageHeader header = new MessageHeader();
-        header.setMessageType(MessageType.METHOD_CALL);
-        header.addHeader(HeaderField.PATH, ObjectPathObject.create("/org/freedesktop/UPower/devices/DisplayDevice"));
-        header.addHeader(HeaderField.DESTINATION, BasicObject.createString("org.freedesktop.UPower"));
-        header.addHeader(HeaderField.INTERFACE, BasicObject.createString("org.freedesktop.DBus.Properties"));
-        header.addHeader(HeaderField.MEMBER, BasicObject.createString("Get"));
-        message.setHeader(header);
-
-        MessageBody body = new MessageBody();
-        body.add(BasicObject.createString("org.freedesktop.UPower.Device"));
-        body.add(BasicObject.createString("State"));
-        message.setBody(body);
+        DbusMessage message = MessageFactory.methodCall(
+                "/org/freedesktop/UPower/devices/DisplayDevice",
+                "org.freedesktop.UPower",
+                "org.freedesktop.DBus.Properties",
+                "Get",
+                // args
+                BasicObject.createString("org.freedesktop.UPower.Device"),
+                BasicObject.createString("State")
+        );
 
         channel.write(message);
 

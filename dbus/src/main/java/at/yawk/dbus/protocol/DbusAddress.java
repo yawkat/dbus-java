@@ -1,5 +1,7 @@
 package at.yawk.dbus.protocol;
 
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -22,6 +24,13 @@ public class DbusAddress {
     public static DbusAddress fromUnixSocket(Path location) {
         return builder("unix")
                 .property("path", location.toString())
+                .build();
+    }
+
+    public static DbusAddress fromTcpAddress(InetSocketAddress address) {
+        return builder("tcp")
+                .property("host", address.getHostString())
+                .property("port", Integer.toString(address.getPort()))
                 .build();
     }
 
