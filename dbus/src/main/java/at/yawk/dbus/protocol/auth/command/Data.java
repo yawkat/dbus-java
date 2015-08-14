@@ -1,5 +1,6 @@
 package at.yawk.dbus.protocol.auth.command;
 
+import at.yawk.dbus.protocol.DbusUtil;
 import java.util.List;
 import javax.xml.bind.DatatypeConverter;
 import lombok.EqualsAndHashCode;
@@ -15,7 +16,7 @@ public class Data extends Command {
     private final byte[] data;
 
     public Data(byte[] data) {
-        super(null, NAME, DatatypeConverter.printHexBinary(data));
+        super(null, NAME, DbusUtil.printHex(data));
         this.data = data;
     }
 

@@ -3,6 +3,8 @@ package at.yawk.dbus.protocol;
 import at.yawk.dbus.protocol.auth.AuthClient;
 import at.yawk.dbus.protocol.auth.mechanism.AnonymousAuthMechanism;
 import at.yawk.dbus.protocol.auth.mechanism.AuthMechanism;
+import at.yawk.dbus.protocol.auth.mechanism.DbusCookieSha1AuthMechanism;
+import at.yawk.dbus.protocol.auth.mechanism.ExternalFdAuthMechanism;
 import at.yawk.dbus.protocol.codec.DbusMainProtocol;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.Unpooled;
@@ -71,7 +73,7 @@ public class DbusConnector {
         // I really don't get why dbus does this
         channel.write(Unpooled.wrappedBuffer(new byte[]{ 0 }));
 
-        AuthMechanism mechanism = new AnonymousAuthMechanism();
+        AuthMechanism mechanism = new DbusCookieSha1AuthMechanism();
         CompletionStage<?> completionPromise = authClient.startAuth(channel, mechanism);
 
         SwappableMessageConsumer swappableConsumer = new SwappableMessageConsumer(initialConsumer);

@@ -1,5 +1,6 @@
 package at.yawk.dbus.protocol.auth.command;
 
+import at.yawk.dbus.protocol.DbusUtil;
 import java.util.List;
 import javax.annotation.Nullable;
 import javax.xml.bind.DatatypeConverter;
@@ -21,7 +22,7 @@ public class Auth extends Command {
         super(AuthDirection.FROM_CLIENT,
               NAME,
               mechanism,
-              initialResponse == null ? null : DatatypeConverter.printHexBinary(initialResponse));
+              initialResponse == null ? null : DbusUtil.printHex(initialResponse));
         if (mechanism == null && initialResponse != null) {
             throw new IllegalArgumentException("initialResponse requires mechanism");
         }

@@ -30,6 +30,13 @@ public class DbusUtil {
     }
 
     /**
+     * Get the hex representation of the given bytes.
+     */
+    public static String printHex(byte[] bytes) {
+        return DatatypeConverter.printHexBinary(bytes).toLowerCase();
+    }
+
+    /**
      * @return The stdout of the command.
      */
     public static String callCommand(String... command) throws Exception {
