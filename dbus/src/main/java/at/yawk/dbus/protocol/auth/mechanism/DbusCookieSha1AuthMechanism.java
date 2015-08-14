@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
@@ -22,6 +23,17 @@ import java.util.concurrent.CompletionStage;
  * @author yawkat
  */
 public class DbusCookieSha1AuthMechanism implements AuthMechanism {
+
+    private final SecureRandom rng;
+
+    {
+        try {
+            rng = SecureRandom.getInstance("SHA1PRNG");
+        } catch (NoSuchAlgorithmException e) {
+            throw new AssertionError(e);
+        }
+    }
+
     @Override
     public CompletionStage<?> startAuth(AuthChannel channel) throws Exception {
         String username = System.getProperty("user.name");
@@ -67,9 +79,8 @@ public class DbusCookieSha1AuthMechanism implements AuthMechanism {
         String cookie = cookieOption.orElseThrow(() -> new DecoderException(
                 "Could not find cookie with id " + cookieId + " in " + cookiePath));
 
-        String clientChallenge = "ccc"; // todo
+        String clientChallenge = DbusUtil.printHex(rng.generateSeed(16));
         String blob = serverChallenge + ':' + clientChallenge + ':' + cookie;
-        System.out.println("to hash " + blob);
         MessageDigest digest = MessageDigest.getInstance("SHA1");
         byte[] hash = digest.digest(blob.getBytes());
 
