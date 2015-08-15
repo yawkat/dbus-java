@@ -8,10 +8,12 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.Attribute;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author yawkat
  */
+@Slf4j
 @RequiredArgsConstructor
 class IncomingMessageAdapter extends SimpleChannelInboundHandler<Object> {
     private final MessageConsumer consumer;
@@ -41,5 +43,11 @@ class IncomingMessageAdapter extends SimpleChannelInboundHandler<Object> {
                 headerAttribute.set(null);
             }
         }
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        log.error("Error in dbus pipeline", cause);
+        ctx.close();
     }
 }
