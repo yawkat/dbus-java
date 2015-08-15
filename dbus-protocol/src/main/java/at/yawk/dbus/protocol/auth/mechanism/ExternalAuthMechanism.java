@@ -12,7 +12,7 @@ import java.util.concurrent.CompletionStage;
 /**
  * @author yawkat
  */
-public class ExternalFdAuthMechanism implements AuthMechanism {
+public class ExternalAuthMechanism implements AuthMechanism {
     @Override
     public CompletionStage<?> startAuth(AuthChannel channel) throws Exception {
         String uid = DbusUtil.callCommand("id", "-u").trim();
