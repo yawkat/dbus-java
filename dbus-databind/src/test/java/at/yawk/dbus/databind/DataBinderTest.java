@@ -2,12 +2,16 @@ package at.yawk.dbus.databind;
 
 import at.yawk.dbus.databind.annotation.Primitive;
 import at.yawk.dbus.databind.binder.Binder;
+import at.yawk.dbus.protocol.object.ArrayObject;
 import at.yawk.dbus.protocol.object.BasicObject;
 import at.yawk.dbus.protocol.object.DbusObject;
+import at.yawk.dbus.protocol.object.DictObject;
+import at.yawk.dbus.protocol.type.ArrayTypeDefinition;
 import at.yawk.dbus.protocol.type.BasicType;
+import at.yawk.dbus.protocol.type.DictTypeDefinition;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-import java.util.Arrays;
+import java.util.*;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -63,7 +67,64 @@ public class DataBinderTest {
         });
     }
 
-    private void testConvert(Type javaType, BasicObject dbusRepresentation, Object javaRepresentation,
+    @Test
+    public void testArray() throws NoSuchFieldException {
+        ArrayTypeDefinition typeDefinition = new ArrayTypeDefinition(BasicType.STRING);
+        ArrayObject arrayObject = ArrayObject.create(
+                typeDefinition,
+                Arrays.asList(BasicObject.createString("a"), BasicObject.createString("b"))
+        );
+
+        testConvert(String[].class, arrayObject, new String[]{ "a", "b" });
+
+        class A {
+            List<String> list;
+            Collection<String> collection;
+            Iterable<String> iterable;
+            Set<String> set;
+        }
+
+        testConvert(A.class.getDeclaredField("list").getGenericType(), arrayObject,
+                    Arrays.asList("a", "b"));
+        testConvert(A.class.getDeclaredField("iterable").getGenericType(), arrayObject,
+                    Arrays.asList("a", "b"));
+        testConvert(A.class.getDeclaredField("collection").getGenericType(), arrayObject,
+                    Arrays.asList("a", "b"));
+        testConvert(A.class.getDeclaredField("set").getGenericType(), arrayObject,
+                    new HashSet<>(Arrays.asList("a", "b")));
+    }
+
+    @Test
+    public void testDict() throws NoSuchFieldException {
+        DictTypeDefinition typeDefinition = new DictTypeDefinition(BasicType.STRING, BasicType.STRING);
+        DictObject dictObject = DictObject.create(
+                typeDefinition,
+                new HashMap<DbusObject, DbusObject>() {{
+                    put(BasicObject.createString("a"), BasicObject.createString("b"));
+                }}
+        );
+
+        class A {
+            Map<String, String> map;
+        }
+
+        testConvert(A.class.getDeclaredField("map").getGenericType(), dictObject,
+                    new HashMap<String, String>() {{
+                        put("a", "b");
+                    }});
+    }
+
+    @Test
+    public void testObject() {
+        ArrayTypeDefinition typeDefinition = new ArrayTypeDefinition(BasicType.STRING);
+        ArrayObject arrayObject = ArrayObject.create(
+                typeDefinition,
+                Arrays.asList(BasicObject.createString("a"), BasicObject.createString("b"))
+        );
+        testConvert(Object.class, arrayObject, Arrays.asList("a", "b"));
+    }
+
+    private void testConvert(Type javaType, DbusObject dbusRepresentation, Object javaRepresentation,
                              Annotation... annotations) {
         assertEquals(decode(javaType, dbusRepresentation), javaRepresentation);
         assertEquals(encode(javaType, javaRepresentation, annotations), dbusRepresentation);

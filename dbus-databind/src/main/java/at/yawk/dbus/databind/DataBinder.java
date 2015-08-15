@@ -6,18 +6,22 @@ import at.yawk.dbus.protocol.type.TypeDefinition;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Type;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * @author yawkat
  */
 public class DataBinder implements BinderFactoryContext {
-    private final Map<Class<? extends Annotation>, Optional<AnnotationBinderTransformer<?>>> transformerCache =
-            new ConcurrentHashMap<>();
     private final List<BinderFactory> binderFactories = new ArrayList<>();
-    private final Map<Type, Binder<?>> binderCache = new ConcurrentHashMap<>();
-    private final Map<TypeDefinition, Binder<?>> defaultBinderCache = new ConcurrentHashMap<>();
+
+    private final Cache<Class<? extends Annotation>, Optional<AnnotationBinderTransformer<?>>> transformerCache =
+            new Cache<>();
+    private final Cache<Type, Binder<?>> binderCache = new Cache<>();
+    private final Cache<Type, Binder<?>> defaultEncoderCache = new Cache<>();
+    private final Cache<TypeDefinition, Binder<?>> defaultDecoderCache = new Cache<>();
 
     {
         binderFactories.add(PrimitiveBinderFactory.getInstance());
@@ -85,15 +89,32 @@ public class DataBinder implements BinderFactoryContext {
     }
 
     @Override
-    public Binder<?> getDefaultBinder(TypeDefinition typeDefinition) {
-        return defaultBinderCache.computeIfAbsent(typeDefinition, t -> {
+    public Binder<?> getDefaultEncodeBinder(Type type) {
+        return defaultEncoderCache.computeIfAbsent(type, t -> {
             for (BinderFactory factory : binderFactories) {
-                Binder<?> binder = factory.getDefaultBinder(this, typeDefinition);
+                Binder<?> binder = factory.getDefaultEncodeBinder(this, type);
+                if (binder != null) {
+                    return binder;
+                }
+            }
+            throw new UnsupportedOperationException("Cannot bind " + type);
+        });
+    }
+
+    @Override
+    public Binder<?> getDefaultDecodeBinder(TypeDefinition typeDefinition) {
+        return defaultDecoderCache.computeIfAbsent(typeDefinition, t -> {
+            for (BinderFactory factory : binderFactories) {
+                Binder<?> binder = factory.getDefaultDecodeBinder(this, typeDefinition);
                 if (binder != null) {
                     return binder;
                 }
             }
             throw new UnsupportedOperationException("Cannot bind " + typeDefinition);
         });
+    }
+
+    public Binder<Object> getDefaultBinder() {
+        return getBinder(Object.class);
     }
 }

@@ -50,12 +50,27 @@ public class ArrayBinderFactory implements BinderFactory {
 
     @Nullable
     @Override
-    public Binder<?> getDefaultBinder(BinderFactoryContext ctx, TypeDefinition typeDefinition) {
+    public Binder<?> getDefaultEncodeBinder(BinderFactoryContext ctx, Type type) {
+        Class<?> rawType = TypeUtil.getRawType(type);
+        if (Iterable.class.isAssignableFrom(rawType)) {
+            return new CollectorBinder<>(
+                    Object.class,
+                    Collectors.toList(),
+                    ctx.getDefaultEncodeBinder(TypeUtil.getTypeVariable(type, Iterable.class, "T"))
+            );
+        }
+
+        return null;
+    }
+
+    @Nullable
+    @Override
+    public Binder<?> getDefaultDecodeBinder(BinderFactoryContext ctx, TypeDefinition typeDefinition) {
         if (typeDefinition instanceof ArrayTypeDefinition) {
             return new CollectorBinder<>(
                     Object.class,
                     Collectors.toList(),
-                    ctx.getDefaultBinder(((ArrayTypeDefinition) typeDefinition).getMemberType())
+                    ctx.getDefaultDecodeBinder(((ArrayTypeDefinition) typeDefinition).getMemberType())
             );
         }
 
@@ -104,19 +119,24 @@ public class ArrayBinderFactory implements BinderFactory {
     private static class CollectorBinder<C extends Iterable<T>, T> implements Binder<C> {
         Binder<T> componentBinder;
         Class<?> rawComponentType;
-        ArrayTypeDefinition arrayType;
+        @Nullable ArrayTypeDefinition arrayType;
         Collector<T, ?, C> collector;
 
         @SuppressWarnings("unchecked")
         public CollectorBinder(Class<?> rawType, Collector<T, ?, C> collector, Binder<T> componentBinder) {
             this.componentBinder = componentBinder;
             rawComponentType = rawType.getComponentType();
-            arrayType = new ArrayTypeDefinition(this.componentBinder.getType());
+            try {
+                arrayType = new ArrayTypeDefinition(this.componentBinder.getType());
+            } catch (TypeNotAvailableException e) {
+                arrayType = null;
+            }
             this.collector = collector;
         }
 
         @Override
         public TypeDefinition getType() {
+            if (arrayType == null) { throw new TypeNotAvailableException(); }
             return arrayType;
         }
 
@@ -136,9 +156,10 @@ public class ArrayBinderFactory implements BinderFactory {
             } else {
                 stream = StreamSupport.stream(obj.spliterator(), false);
             }
+            List<DbusObject> objects = stream.map(componentBinder::encode).collect(Collectors.toList());
             return ArrayObject.create(
-                    arrayType,
-                    stream.map(componentBinder::encode).collect(Collectors.toList())
+                    arrayType == null ? new ArrayTypeDefinition(objects.get(0).getType()) : arrayType,
+                    objects
             );
         }
     }

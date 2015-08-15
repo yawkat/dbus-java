@@ -22,17 +22,18 @@ public class ObjectBinderFactory implements BinderFactory {
             return new Binder<Object>() {
                 @Override
                 public TypeDefinition getType() {
-                    throw new UnsupportedOperationException();
+                    throw new TypeNotAvailableException();
                 }
 
                 @Override
                 public Object decode(DbusObject object) {
-                    return ctx.getDefaultBinder(object.getType()).decode(object);
+                    return ctx.getDefaultDecodeBinder(object.getType()).decode(object);
                 }
 
+                @SuppressWarnings("unchecked")
                 @Override
                 public DbusObject encode(Object obj) {
-                    throw new UnsupportedOperationException();
+                    return ((Binder) ctx.getDefaultEncodeBinder(obj.getClass())).encode(obj);
                 }
             };
         }

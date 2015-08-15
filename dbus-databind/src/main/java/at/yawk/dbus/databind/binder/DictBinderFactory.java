@@ -32,10 +32,23 @@ public class DictBinderFactory implements BinderFactory {
 
     @Nullable
     @Override
-    public Binder<?> getDefaultBinder(BinderFactoryContext ctx, TypeDefinition typeDefinition) {
+    public Binder<?> getDefaultEncodeBinder(BinderFactoryContext ctx, Type type) {
+        Class<?> rawType = TypeUtil.getRawType(type);
+        if (Map.class.isAssignableFrom(rawType)) {
+
+            return new MapBinder<>(ctx.getDefaultEncodeBinder(TypeUtil.getTypeVariable(type, Map.class, "K")),
+                                   ctx.getDefaultEncodeBinder(TypeUtil.getTypeVariable(type, Map.class, "V")));
+        }
+
+        return null;
+    }
+
+    @Nullable
+    @Override
+    public Binder<?> getDefaultDecodeBinder(BinderFactoryContext ctx, TypeDefinition typeDefinition) {
         if (typeDefinition instanceof DictTypeDefinition) {
-            return new MapBinder<>(ctx.getDefaultBinder(((DictTypeDefinition) typeDefinition).getKeyType()),
-                                   ctx.getDefaultBinder(((DictTypeDefinition) typeDefinition).getValueType()));
+            return new MapBinder<>(ctx.getDefaultDecodeBinder(((DictTypeDefinition) typeDefinition).getKeyType()),
+                                   ctx.getDefaultDecodeBinder(((DictTypeDefinition) typeDefinition).getValueType()));
         }
 
         return null;
@@ -44,17 +57,22 @@ public class DictBinderFactory implements BinderFactory {
     private static class MapBinder<K, V> implements Binder<Map<K, V>> {
         Binder<K> keyBinder;
         Binder<V> valueBinder;
-        DictTypeDefinition dictType;
+        @Nullable DictTypeDefinition dictType;
 
         @SuppressWarnings("unchecked")
         public MapBinder(Binder<K> keyBinder, Binder<V> valueBinder) {
             this.keyBinder = keyBinder;
             this.valueBinder = valueBinder;
-            dictType = new DictTypeDefinition(this.keyBinder.getType(), this.valueBinder.getType());
+            try {
+                dictType = new DictTypeDefinition(this.keyBinder.getType(), this.valueBinder.getType());
+            } catch (TypeNotAvailableException e) {
+                dictType = null;
+            }
         }
 
         @Override
         public TypeDefinition getType() {
+            if (dictType == null) { throw new TypeNotAvailableException(); }
             return dictType;
         }
 
@@ -70,6 +88,11 @@ public class DictBinderFactory implements BinderFactory {
         public DbusObject encode(Map<K, V> obj) {
             Map<DbusObject, DbusObject> entries = new HashMap<>(obj.size());
             obj.forEach((k, v) -> entries.put(keyBinder.encode(k), valueBinder.encode(v)));
+            DictTypeDefinition dictType = this.dictType;
+            if (dictType == null) {
+                Map.Entry<DbusObject, DbusObject> entry = entries.entrySet().iterator().next();
+                dictType = new DictTypeDefinition(entry.getKey().getType(), entry.getValue().getType());
+            }
             return DictObject.create(dictType, entries);
         }
     }

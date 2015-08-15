@@ -79,7 +79,7 @@ public class PrimitiveBinderFactory implements BinderFactory {
 
     @Nullable
     @Override
-    public Binder<?> getDefaultBinder(BinderFactoryContext ctx, TypeDefinition typeDefinition) {
+    public Binder<?> getDefaultDecodeBinder(BinderFactoryContext ctx, TypeDefinition typeDefinition) {
         return defaultBinders.get(typeDefinition);
     }
 }

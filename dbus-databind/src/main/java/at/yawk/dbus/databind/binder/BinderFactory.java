@@ -12,11 +12,21 @@ public interface BinderFactory {
     Binder<?> getBinder(BinderFactoryContext ctx, Type type);
 
     /**
-     * Get the default binder to use for the given type definition. For example, for an array type definition, this
-     * might return a {@code List<Object>} binder.
+     * Get the default binder to use for the given type definition. For example, for any type that extends {@link
+     * Iterable}, this might return an {@link at.yawk.dbus.protocol.object.ArrayObject} binder. This binder only has
+     * to support encoding.
      */
     @Nullable
-    default Binder<?> getDefaultBinder(BinderFactoryContext ctx, TypeDefinition typeDefinition) {
+    default Binder<?> getDefaultEncodeBinder(BinderFactoryContext ctx, Type type) {
+        return getBinder(ctx, type);
+    }
+
+    /**
+     * Get the default binder to use for the given type definition. For example, for an array type definition, this
+     * might return a {@code List<Object>} binder. This binder only has to support decoding.
+     */
+    @Nullable
+    default Binder<?> getDefaultDecodeBinder(BinderFactoryContext ctx, TypeDefinition typeDefinition) {
         return null;
     }
 }

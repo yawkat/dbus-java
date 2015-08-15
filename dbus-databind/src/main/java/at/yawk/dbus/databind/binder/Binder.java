@@ -27,7 +27,7 @@ public interface Binder<T> {
         };
     }
 
-    TypeDefinition getType();
+    TypeDefinition getType() throws TypeNotAvailableException;
 
     T decode(DbusObject object);
 
