@@ -34,8 +34,8 @@ public class PatternResponseValidator implements ResponseValidator {
 
     @Override
     public void validate(Response response) throws Exception {
-        if (response.getError() != null && pattern.matcher(response.getError()).matches()) {
-            throw exceptionFactory.apply(response.getError());
+        if (response.getErrorName() != null && pattern.matcher(response.getErrorName()).matches()) {
+            throw exceptionFactory.apply(response.getErrorName());
         }
     }
 }

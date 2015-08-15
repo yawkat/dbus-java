@@ -73,10 +73,7 @@ public class RmiFactoryTest {
     @Test(expectedExceptions = NoSuchElementException.class,
             expectedExceptionsMessageRegExp = "Hi")
     public void testException() {
-        setUp(request -> {
-            System.out.println("errno");
-            return Response.error("Hi");
-        });
+        setUp(request -> Response.error("Hi", Collections.emptyList()));
         instance.doSomething("arg");
     }
 

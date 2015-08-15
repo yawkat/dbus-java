@@ -168,8 +168,11 @@ class CallSiteBuilder implements Request {
 
     @SneakyThrows
     private void decorateFromExceptionMapping(ExceptionMapping mapping) {
-        PatternResponseValidator validator = new PatternResponseValidator(
-                Pattern.compile(mapping.pattern()), mapping.exception());
+        Pattern pattern = mapping.pattern().isEmpty() ?
+                Pattern.compile(mapping.value(), Pattern.LITERAL) :
+                Pattern.compile(mapping.pattern());
+
+        PatternResponseValidator validator = new PatternResponseValidator(pattern, mapping.exception());
         addValidator(validator);
     }
 

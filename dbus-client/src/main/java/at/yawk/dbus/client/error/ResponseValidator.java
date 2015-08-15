@@ -10,8 +10,8 @@ public interface ResponseValidator {
      * {@link ResponseValidator} that handles any error in the response and throws a {@link RemoteException}.
      */
     ResponseValidator HANDLE_ERROR = response -> {
-        if (response.getError() != null) {
-            throw new RemoteException(response.getError());
+        if (response.isError()) {
+            throw new RemoteException(response.getErrorName(), response.getReply());
         }
     };
 

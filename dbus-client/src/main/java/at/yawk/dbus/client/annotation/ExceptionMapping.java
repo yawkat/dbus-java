@@ -10,7 +10,9 @@ import javax.annotation.RegEx;
 @Retention(RetentionPolicy.RUNTIME)
 @Repeatable(ExceptionMapping.RepeatableExceptionMapping.class)
 public @interface ExceptionMapping {
-    @RegEx String pattern();
+    String value() default "";
+
+    @RegEx String pattern() default "";
 
     Class<? extends Exception> exception();
 
