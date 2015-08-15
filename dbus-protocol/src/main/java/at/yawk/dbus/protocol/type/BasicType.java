@@ -81,6 +81,10 @@ public enum BasicType implements TypeDefinition {
         return length >= 0;
     }
 
+    public boolean isInteger() {
+        return isNumeric() && this != DOUBLE;
+    }
+
     /**
      * Get the fixed length of this type in bytes.
      *

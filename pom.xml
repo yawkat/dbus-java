@@ -10,6 +10,7 @@
     <version>1.0-SNAPSHOT</version>
     <modules>
         <module>dbus-protocol</module>
+        <module>dbus-databind</module>
     </modules>
 
     <repositories>
