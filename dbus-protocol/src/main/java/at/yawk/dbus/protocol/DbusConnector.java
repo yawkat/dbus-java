@@ -103,13 +103,7 @@ public class DbusConnector {
             if (address.hasProperty("path")) {
                 return connect(new DomainSocketAddress(address.getProperty("path")));
             } else if (address.hasProperty("abstract")) {
-                String path = address.getProperty("abstract");
-
-                // replace leading slash with \0 for abstract socket
-                if (!path.startsWith("/")) { throw new IllegalArgumentException("Illegal abstract path " + path); }
-                path = '\0' + path;
-
-                return connect(new DomainSocketAddress(path));
+                return connect(new DomainSocketAddress('\0' + address.getProperty("abstract")));
             } else {
                 throw new IllegalArgumentException("Neither path nor abstract given in dbus url");
             }

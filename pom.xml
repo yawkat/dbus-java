@@ -22,7 +22,7 @@
     </repositories>
 
     <properties>
-        <netty.version>5.0.0.Alpha2</netty.version>
+        <netty.version>5.0.0.Alpha3-SNAPSHOT</netty.version>
         <lombok.version>1.16.4</lombok.version>
 
         <project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
