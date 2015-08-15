@@ -202,8 +202,8 @@ public abstract class BasicObject implements DbusObject {
     /**
      * Create a new dbus object of type {@link BasicType#STRING} with the given string value.
      */
-    public static BasicObject createString(String value) {
-        return new StringBasicObject(value);
+    public static StringObject createString(String value) {
+        return new StringObject(value);
     }
 
     public static BasicObject createSignature(List<TypeDefinition> definitions) {
@@ -216,7 +216,7 @@ public abstract class BasicObject implements DbusObject {
 
     public static BasicObject deserialize(BasicType type, AlignableByteBuf buf) {
         if (type == BasicType.STRING) {
-            return StringBasicObject.deserialize(buf);
+            return StringObject.deserialize(buf);
         } else if (type == BasicType.SIGNATURE) {
             return SignatureObject.deserialize(buf);
         } else if (type == BasicType.OBJECT_PATH) {

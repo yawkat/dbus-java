@@ -11,22 +11,22 @@ import lombok.ToString;
  */
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
-class StringBasicObject extends BasicObject {
+public class StringObject extends BasicObject {
     private final String value;
 
-    public StringBasicObject(String value) {
+    public StringObject(String value) {
         super(BasicType.STRING);
         this.value = value;
     }
 
-    static StringBasicObject deserialize(AlignableByteBuf buf) {
+    static StringObject deserialize(AlignableByteBuf buf) {
         buf.alignRead(4);
         int len = Math.toIntExact(buf.readUnsignedInt());
         ByteBuf bts = buf.readBytes(len);
         if (buf.readByte() != 0) {
             throw new DeserializerException("String not properly NUL-terminated");
         }
-        return new StringBasicObject(bts.toString(StandardCharsets.UTF_8));
+        return new StringObject(bts.toString(StandardCharsets.UTF_8));
     }
 
     @Override
