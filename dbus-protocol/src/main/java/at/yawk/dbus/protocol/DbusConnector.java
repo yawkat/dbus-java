@@ -122,7 +122,7 @@ public class DbusConnector {
         }
     }
 
-    public DbusChannel connectUser() throws Exception {
+    public DbusChannel connectSession() throws Exception {
         String machineId = new String(Files.readAllBytes(Paths.get("/etc/machine-id"))).trim();
         String response = DbusUtil.callCommand("dbus-launch", "--autolaunch", machineId);
         Properties properties = new Properties();

@@ -6,10 +6,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Shortcut for {@code @Bus{"user"}}
+ * Shortcut for {@code @Bus{"session"}}
  *
  * @author yawkat
  */
 @Target({ ElementType.TYPE, ElementType.METHOD })
 @Retention(RetentionPolicy.RUNTIME)
-public @interface UserBus {}
+public @interface SessionBus {}

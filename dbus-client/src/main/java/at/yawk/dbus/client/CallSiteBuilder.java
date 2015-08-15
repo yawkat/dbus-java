@@ -147,7 +147,7 @@ class CallSiteBuilder implements Request {
         ifPresent(element, SubInterface.class, a -> this.interfaceName += '.' + a.value());
         ifPresent(element, Bus.class, a -> this.bus = a.value());
         ifPresent(element, SystemBus.class, a -> this.bus = "system");
-        ifPresent(element, UserBus.class, a -> this.bus = "user");
+        ifPresent(element, SessionBus.class, a -> this.bus = "session");
         ifPresent(element, Call.class, a -> {
             this.requestType = RequestType.CALL;
             this.messageType = MessageType.METHOD_CALL;
