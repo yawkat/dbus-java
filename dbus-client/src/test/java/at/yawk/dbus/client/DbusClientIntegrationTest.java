@@ -17,6 +17,7 @@ public class DbusClientIntegrationTest {
     public void setUp() throws Exception {
         client = new DbusClient();
         client.connectSystem();
+        client.connectSession();
     }
 
     @AfterMethod
@@ -26,18 +27,31 @@ public class DbusClientIntegrationTest {
 
     @Test(timeOut = 5000L) // timeout for netty issues
     public void test() {
-        // this will probably throw or something on failure
-        List<String> names = client.implement(TestItf.class).listNames();
-        Assert.assertTrue(names.size() > 3);
+        TestItf itf = client.implement(TestItf.class);
+
+        // these will probably throw or something on failure
+
+        List<String> systemNames = itf.listNamesSystem();
+        Assert.assertTrue(systemNames.size() > 3);
+
+        List<String> sessionNames = itf.listNamesSession();
+        Assert.assertTrue(sessionNames.size() > 3);
+
+        Assert.assertNotEquals(systemNames, sessionNames);
     }
 
-    @SystemBus
     @Interface("org.freedesktop.DBus")
     @Destination("org.freedesktop.DBus")
     @ObjectPath("/")
     interface TestItf {
+        @SystemBus
         @Call
         @Member("ListNames")
-        List<String> listNames();
+        List<String> listNamesSystem();
+
+        @SessionBus
+        @Call
+        @Member("ListNames")
+        List<String> listNamesSession();
     }
 }
