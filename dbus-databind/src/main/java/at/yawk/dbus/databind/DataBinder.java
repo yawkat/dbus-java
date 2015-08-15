@@ -6,10 +6,7 @@ import at.yawk.dbus.protocol.type.TypeDefinition;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -46,9 +43,9 @@ public class DataBinder implements BinderFactoryContext {
     }
 
     @SuppressWarnings("unchecked")
-    private Binder<?> applyBinderTransforms(Binder<?> binder, AnnotatedElement element) {
-        for (Annotation annotation : element.getAnnotations()) {
-            Optional<AnnotationBinderTransformer<?>> transformer = getBinderTransformer(annotation.getClass());
+    private Binder<?> applyBinderTransforms(Binder<?> binder, List<Annotation> annotations) {
+        for (Annotation annotation : annotations) {
+            Optional<AnnotationBinderTransformer<?>> transformer = getBinderTransformer(annotation.annotationType());
             if (transformer.isPresent()) {
                 binder = ((AnnotationBinderTransformer) transformer.get()).wrap(annotation, binder);
             }
@@ -61,8 +58,17 @@ public class DataBinder implements BinderFactoryContext {
     }
 
     public Binder<?> getBinder(Type type, AnnotatedElement metaElement) {
+        return getBinder(type, Arrays.asList(metaElement.getAnnotations()));
+    }
+
+    public Binder<?> getBinder(Type type, List<Annotation> annotations) {
         Binder<?> baseBinder = getBinder(type);
-        return applyBinderTransforms(baseBinder, metaElement);
+        return applyBinderTransforms(baseBinder, annotations);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> Binder<T> getBinder(Class<T> type) {
+        return (Binder<T>) getBinder((Type) type);
     }
 
     @Override
