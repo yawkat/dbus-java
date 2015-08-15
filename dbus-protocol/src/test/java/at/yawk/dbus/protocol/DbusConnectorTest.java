@@ -27,7 +27,7 @@ import org.testng.annotations.Test;
  */
 @Slf4j
 public class DbusConnectorTest {
-    @Test//(enabled = false)
+    @Test(enabled = false)
     public void testDefault() throws Exception {
         DbusChannel channel = new DbusConnector().connect(
                 DbusAddress.fromTcpAddress(new InetSocketAddress("localhost", 10000))
@@ -55,7 +55,7 @@ public class DbusConnectorTest {
         channel.closeStage().toCompletableFuture().get();
     }
 
-    @Test//(enabled = false)
+    @Test(enabled = false)
     public void testServer() throws Exception {
         ServerBootstrap bootstrap = new ServerBootstrap();
         bootstrap.channel(EpollServerDomainSocketChannel.class);

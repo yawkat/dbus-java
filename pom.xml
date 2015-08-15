@@ -11,6 +11,7 @@
     <modules>
         <module>dbus-protocol</module>
         <module>dbus-databind</module>
+        <module>dbus-client</module>
     </modules>
 
     <repositories>
