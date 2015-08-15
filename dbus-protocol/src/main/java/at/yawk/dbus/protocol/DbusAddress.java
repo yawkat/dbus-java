@@ -14,7 +14,7 @@ public class DbusAddress {
     private static final byte[] UNESCAPED_CHARS;
 
     static {
-        UNESCAPED_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ012345789_-/.\\"
+        UNESCAPED_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-/.\\"
                 .getBytes(StandardCharsets.US_ASCII);
         Arrays.sort(UNESCAPED_CHARS);
     }
