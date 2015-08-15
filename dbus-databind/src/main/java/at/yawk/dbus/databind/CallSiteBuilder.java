@@ -36,6 +36,7 @@ import lombok.ToString;
         "arguments",
 }, doNotUseGetters = true)
 class CallSiteBuilder implements Request {
+    @Getter String bus;
     MessageType messageType;
     RequestType requestType;
     String objectPath;
@@ -57,6 +58,7 @@ class CallSiteBuilder implements Request {
      */
     CallSiteBuilder createChild(boolean childTransient) {
         CallSiteBuilder child = new CallSiteBuilder();
+        child.bus = bus;
         child.requestType = requestType;
         child.messageType = messageType;
         child.objectPath = objectPath;
@@ -110,6 +112,9 @@ class CallSiteBuilder implements Request {
         ifPresent(element, Member.class, a -> this.member = a.value());
         ifPresent(element, ObjectPath.class, a -> this.objectPath = a.value());
         ifPresent(element, SubInterface.class, a -> this.interfaceName += '.' + a.value());
+        ifPresent(element, Bus.class, a -> this.bus = a.value());
+        ifPresent(element, SystemBus.class, a -> this.bus = "system");
+        ifPresent(element, UserBus.class, a -> this.bus = "user");
         ifPresent(element, Call.class, a -> {
             this.requestType = RequestType.CALL;
             this.messageType = MessageType.METHOD_CALL;

@@ -10,6 +10,8 @@ import javax.annotation.Nullable;
  * @author yawkat
  */
 public interface Request {
+    String getBus();
+
     MessageType getType();
 
     ObjectPathObject getObjectPath();

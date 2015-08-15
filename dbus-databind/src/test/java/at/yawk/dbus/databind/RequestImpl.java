@@ -24,6 +24,7 @@ import lombok.experimental.Accessors;
 @ToString
 @EqualsAndHashCode
 class RequestImpl implements Request {
+    String bus;
     MessageType type;
     String objectPath;
     String interfaceName;
@@ -60,6 +61,11 @@ class RequestImpl implements Request {
     public RequestImpl arguments(List<DbusObject> arguments) {
         this.arguments = arguments;
         return this;
+    }
+
+    @Override
+    public String getBus() {
+        return bus;
     }
 
     @Override
