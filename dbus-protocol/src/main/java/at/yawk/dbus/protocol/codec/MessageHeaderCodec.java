@@ -44,7 +44,7 @@ class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
     /**
      * How many bytes still need to be read in the current packet.
      */
-    private long toRead;
+    private int toRead;
     /**
      * Byte order to forward to the next decoders.
      */
@@ -55,7 +55,7 @@ class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
             throws Exception {
         out = out.order(Local.OUTBOUND_ORDER);
 
-        AlignableByteBuf alignedBuf = AlignableByteBuf.fromMessageBuffer(out);
+        AlignableByteBuf alignedBuf = AlignableByteBuf.encoding(out);
         out.writeByte(Local.OUTBOUND_ORDER == ByteOrder.LITTLE_ENDIAN ? 'l' : 'B');
 
         out.writeByte(msg.getMessageType().getId());
@@ -96,31 +96,25 @@ class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
     }
 
     @Override
-    protected void decode(ChannelHandlerContext ctx, ByteBuf buf, List<Object> out)
+    protected void decode(ChannelHandlerContext ctx, ByteBuf rawBuf, List<Object> out)
             throws Exception {
-        // forward some data to be decoded
-        int forwarding = Math.toIntExact(Math.min(buf.readableBytes(), toRead));
-        if (forwarding > 0) {
-            ByteBuf slice = buf.slice().order(byteOrder);
-            slice.writerIndex(slice.readerIndex() + forwarding);
-            slice.retain();
-            out.add(slice);
-
-            toRead -= forwarding;
-            buf.skipBytes(forwarding);
-            if (log.isTraceEnabled()) {
-                log.trace("Forwarding {} bytes of body data ({} to go, {} on next header): {}",
-                          forwarding,
-                          toRead,
-                          buf.readableBytes(),
-                          slice);
+        if (toRead != 0) {
+            if (rawBuf.readableBytes() < toRead) {
+                return;
             }
+            ByteBuf slice = rawBuf.slice().order(byteOrder);
+            slice.writerIndex(slice.readerIndex() + toRead);
+            slice.retain();
+            out.add(AlignableByteBuf.decoding(slice));
+
+            rawBuf.readerIndex(rawBuf.readerIndex() + toRead);
+            toRead = 0;
         }
 
-        if (buf.readableBytes() < MIN_HEADER_LENGTH) { return; }
+        if (rawBuf.readableBytes() < MIN_HEADER_LENGTH) { return; }
 
-        buf.markReaderIndex();
-        byte endianness = buf.readByte();
+        rawBuf.markReaderIndex();
+        byte endianness = rawBuf.readByte();
         ByteOrder order;
         switch (endianness) {
         case 'l':
@@ -133,8 +127,11 @@ class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
             throw new DecoderException("Unknown byte order byte " + endianness);
         }
 
-        buf = buf.order(order);
-        AlignableByteBuf alignedBuf = AlignableByteBuf.fromMessageBuffer(buf);
+        AlignableByteBuf buf = AlignableByteBuf.decoding(
+                rawBuf.resetReaderIndex().order(order));
+
+        buf.markReaderIndex();
+        buf.readByte(); // skip endianness byte we read above
 
         @Nullable MessageType type = MessageType.byId(buf.readByte());
         byte flags = buf.readByte();
@@ -156,7 +153,7 @@ class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
         header.setSerial(serial);
         header.setHeaderFields(new EnumMap<>(HeaderField.class));
 
-        ArrayObject headers = (ArrayObject) tryDecode(HEADER_FIELD_LIST_TYPE, alignedBuf);
+        ArrayObject headers = (ArrayObject) tryDecode(HEADER_FIELD_LIST_TYPE, buf);
         if (headers == null) {
             // not enough data
             buf.resetReaderIndex();
@@ -180,13 +177,13 @@ class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
             checkRequiredHeaderFieldsPresent(header);
         }
 
-        if (!alignedBuf.canAlignRead(8)) {
+        if (!buf.canAlignRead(8)) {
             buf.resetReaderIndex();
             return;
         }
-        alignedBuf.alignRead(8);
+        buf.alignRead(8);
 
-        toRead = header.getMessageBodyLength();
+        toRead = Math.toIntExact(header.getMessageBodyLength());
         byteOrder = order;
         out.add(header);
     }

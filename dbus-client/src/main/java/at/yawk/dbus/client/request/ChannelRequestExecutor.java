@@ -5,7 +5,6 @@ import at.yawk.dbus.protocol.object.DbusObject;
 import at.yawk.dbus.protocol.object.StringObject;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -16,22 +15,10 @@ public class ChannelRequestExecutor implements RequestExecutor {
     private final DbusChannel channel;
     private final ChannelRequestStateHolder<Response> stateHolder = new ChannelRequestStateHolder<>();
 
-    // start at 2, 1 is used by hello
-    // todo: move this to the actual channel
-    private final AtomicInteger serialGenerator = new AtomicInteger(2);
-
     public ChannelRequestExecutor(DbusChannel channel) {
         this.channel = channel;
         channel.closeStage().thenRun(stateHolder.createCleaner());
         channel.setMessageConsumer(new MessageConsumerImpl());
-    }
-
-    private int createSerial() {
-        int serial;
-        do {
-            serial = serialGenerator.getAndIncrement();
-        } while (serial == 0);
-        return serial;
     }
 
     @Override
@@ -40,7 +27,7 @@ public class ChannelRequestExecutor implements RequestExecutor {
     }
 
     private CompletableFuture<Response> executeLater(Request request) {
-        int serial = createSerial();
+        int serial = channel.createSerial();
 
         MessageHeader header = new MessageHeader();
         header.setMessageType(request.getType());

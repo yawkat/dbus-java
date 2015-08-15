@@ -5,6 +5,7 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -17,6 +18,17 @@ class DbusChannelImpl implements DbusChannel {
     private final Channel channel;
     private final SwappableMessageConsumer protocol;
 
+    private final AtomicInteger nextSerial = new AtomicInteger(1);
+
+    @Override
+    public int createSerial() {
+        int serial;
+        do {
+            serial = nextSerial.getAndIncrement();
+        } while (serial == 0);
+        return serial;
+    }
+
     @Override
     public void setMessageConsumer(MessageConsumer consumer) {
         protocol.setConsumer(consumer);
@@ -24,6 +36,9 @@ class DbusChannelImpl implements DbusChannel {
 
     @Override
     public void write(DbusMessage message) {
+        if (message.getHeader().getSerial() == 0) {
+            message.getHeader().setSerial(createSerial());
+        }
         channel.writeAndFlush(message, channel.voidPromise());
     }
 

@@ -17,12 +17,20 @@ public class AlignableByteBuf extends WrappedByteBuf {
         this.baseAlignment = baseAlignment;
     }
 
+    public static AlignableByteBuf decoding(ByteBuf wrapping) {
+        return decoding(wrapping, 1 << 30);
+    }
+
+    public static AlignableByteBuf decoding(ByteBuf wrapping, int baseAlignment) {
+        return new AlignableByteBuf(wrapping, -wrapping.readerIndex(), baseAlignment);
+    }
+
     /**
      * Create a new {@link AlignableByteBuf} from the given message buffer. The message must start at {@code
      * buffer[0]}.
      */
-    public static AlignableByteBuf fromMessageBuffer(ByteBuf buffer) {
-        return new AlignableByteBuf(buffer, 0, 1 << 30);
+    public static AlignableByteBuf encoding(ByteBuf wrapping) {
+        return new AlignableByteBuf(wrapping, 0, 1 << 30);
     }
 
     /**
@@ -35,17 +43,8 @@ public class AlignableByteBuf extends WrappedByteBuf {
         return new AlignableByteBuf(buffer, 0, existingAlignment);
     }
 
-    /**
-     * Create a new {@link AlignableByteBuf} from a buffer that is known to be at a given offset of a known alignment.
-     *
-     * @param existingAlignment the alignment buffer - offset.
-     */
-    public static AlignableByteBuf fromOffsetBuffer(ByteBuf buffer, int offset, int existingAlignment) {
-        return new AlignableByteBuf(buffer, offset, existingAlignment);
-    }
-
-    private static int calculateAlignmentOffset(int messageOffset, int position, int alignment) {
-        return (alignment - ((messageOffset + position) % alignment)) % alignment;
+    private int calculateAlignmentOffset(int position, int alignment) {
+        return (alignment - ((this.messageOffset + position) % alignment)) % alignment;
     }
 
     private boolean canAlign(int alignment) {
@@ -61,13 +60,13 @@ public class AlignableByteBuf extends WrappedByteBuf {
 
     public boolean canAlignRead(int alignment) {
         if (!canAlign(alignment)) { return false; }
-        int toPad = calculateAlignmentOffset(messageOffset, readerIndex(), alignment);
+        int toPad = calculateAlignmentOffset(readerIndex(), alignment);
         return readableBytes() >= toPad;
     }
 
     public void alignRead(int alignment) {
         checkAlign(alignment);
-        int toPad = calculateAlignmentOffset(messageOffset, readerIndex(), alignment);
+        int toPad = calculateAlignmentOffset(readerIndex(), alignment);
         for (int i = 0; i < toPad; i++) {
             if (readByte() != 0) {
                 throw new DeserializerException("Non-null byte in alignment padding");
@@ -77,13 +76,13 @@ public class AlignableByteBuf extends WrappedByteBuf {
 
     public boolean canAlignWrite(int alignment) {
         if (!canAlign(alignment)) { return false; }
-        int toPad = calculateAlignmentOffset(messageOffset, writerIndex(), alignment);
+        int toPad = calculateAlignmentOffset(writerIndex(), alignment);
         return writableBytes() >= toPad;
     }
 
     public void alignWrite(int alignment) {
         checkAlign(alignment);
-        int toPad = calculateAlignmentOffset(messageOffset, writerIndex(), alignment);
+        int toPad = calculateAlignmentOffset(writerIndex(), alignment);
         for (int i = 0; i < toPad; i++) {
             writeByte(0);
         }

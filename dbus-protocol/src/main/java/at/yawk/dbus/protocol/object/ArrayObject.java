@@ -57,7 +57,6 @@ public abstract class ArrayObject implements DbusObject {
             throw new DeserializerException(
                     "Array exceeded length limit (got " + bytes + " bytes, max is " + ARRAY_MAX_BYTES + " bytes)");
         }
-        buf.alignRead(8);
         int start = buf.readerIndex();
         List<DbusObject> values = new ArrayList<>();
         while ((buf.readerIndex() - start) < bytes) {
@@ -73,7 +72,6 @@ public abstract class ArrayObject implements DbusObject {
         buf.alignWrite(4);
         buf.writeInt(tempBuffer.writerIndex());
         if (tempBuffer.isReadable()) {
-            buf.alignWrite(8);
             buf.writeBytes(tempBuffer);
         }
         tempBuffer.release();

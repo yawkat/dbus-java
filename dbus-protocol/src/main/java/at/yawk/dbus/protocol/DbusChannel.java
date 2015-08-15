@@ -10,7 +10,12 @@ public interface DbusChannel extends Closeable {
     void setMessageConsumer(MessageConsumer consumer);
 
     /**
-     * Send the given message to this channel.
+     * Create a unique serial for this channel.
+     */
+    int createSerial();
+
+    /**
+     * Send the given message to this channel. If no serial is set in the message, it will be created during this call.
      */
     void write(DbusMessage message);
 
