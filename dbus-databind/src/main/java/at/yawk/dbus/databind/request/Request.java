@@ -3,6 +3,7 @@ package at.yawk.dbus.databind.request;
 import at.yawk.dbus.protocol.MessageType;
 import at.yawk.dbus.protocol.object.DbusObject;
 import at.yawk.dbus.protocol.object.ObjectPathObject;
+import at.yawk.dbus.protocol.object.StringObject;
 import java.util.List;
 import javax.annotation.Nullable;
 
@@ -16,12 +17,12 @@ public interface Request {
 
     ObjectPathObject getObjectPath();
 
-    String getInterfaceName();
+    StringObject getInterfaceName();
 
-    String getMember();
+    StringObject getMember();
 
     @Nullable
-    String getDestination();
+    StringObject getDestination();
 
     List<DbusObject> getArguments();
 }

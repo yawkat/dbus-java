@@ -14,9 +14,13 @@ import lombok.ToString;
 public class StringObject extends BasicObject {
     private final String value;
 
-    public StringObject(String value) {
+    StringObject(String value) {
         super(BasicType.STRING);
         this.value = value;
+    }
+
+    public static StringObject create(String value) {
+        return new StringObject(value);
     }
 
     static StringObject deserialize(AlignableByteBuf buf) {

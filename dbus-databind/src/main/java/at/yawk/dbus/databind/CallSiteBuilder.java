@@ -11,6 +11,7 @@ import at.yawk.dbus.protocol.MessageType;
 import at.yawk.dbus.protocol.object.BasicObject;
 import at.yawk.dbus.protocol.object.DbusObject;
 import at.yawk.dbus.protocol.object.ObjectPathObject;
+import at.yawk.dbus.protocol.object.StringObject;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
@@ -19,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.ToString;
@@ -40,9 +42,9 @@ class CallSiteBuilder implements Request {
     MessageType messageType;
     RequestType requestType;
     String objectPath;
-    @Getter String interfaceName;
-    @Getter String member;
-    @Getter String destination;
+    String interfaceName;
+    String member;
+    String destination;
     List<CallSiteAction> actions = new ArrayList<>();
     @Getter List<DbusObject> arguments = new ArrayList<>();
     List<ResponseValidator> responseValidators = new ArrayList<>();
@@ -51,6 +53,9 @@ class CallSiteBuilder implements Request {
     Binder<?> returnBinder;
 
     ObjectPathObject objectPathObject;
+    StringObject interfaceObject;
+    StringObject memberObject;
+    StringObject destinationObject;
 
     /**
      * @param childTransient If set to {@code true}, the returned call site will not be decorated from anything but
@@ -79,10 +84,28 @@ class CallSiteBuilder implements Request {
 
     @Override
     public ObjectPathObject getObjectPath() {
-        if (objectPathObject == null) {
-            objectPathObject = ObjectPathObject.create(objectPath);
-        }
+        if (objectPathObject == null) { objectPathObject = ObjectPathObject.create(objectPath); }
         return objectPathObject;
+    }
+
+    @Override
+    public StringObject getInterfaceName() {
+        if (interfaceObject == null) { interfaceObject = StringObject.create(interfaceName); }
+        return interfaceObject;
+    }
+
+    @Override
+    public StringObject getMember() {
+        if (memberObject == null) { memberObject = StringObject.create(member); }
+        return memberObject;
+    }
+
+    @Nullable
+    @Override
+    public StringObject getDestination() {
+        if (destination == null) { return null; }
+        if (destinationObject == null) { destinationObject = StringObject.create(destination); }
+        return destinationObject;
     }
 
     void decorateFromClass(Class<?> clazz) {
