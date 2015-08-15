@@ -52,6 +52,13 @@ class ChannelRequestStateHolder<T> {
     }
 
     /**
+     * @return {@code true} if a request of the given id is pending.
+     */
+    synchronized boolean isPending(int serial) {
+        return pendingFutures.containsKey(serial);
+    }
+
+    /**
      * Return a future listener that will invoke {@link #onHangup()} when called. This listener will not hold a strong
      * reference to this state holder.
      */

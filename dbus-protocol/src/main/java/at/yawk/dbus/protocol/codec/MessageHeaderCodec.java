@@ -107,8 +107,14 @@ class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
             out.add(slice);
 
             toRead -= forwarding;
-            log.trace("Forwarding {} bytes of body data ({} to go)", forwarding, toRead);
             buf.skipBytes(forwarding);
+            if (log.isTraceEnabled()) {
+                log.trace("Forwarding {} bytes of body data ({} to go, {} on next header): {}",
+                          forwarding,
+                          toRead,
+                          buf.readableBytes(),
+                          slice);
+            }
         }
 
         if (buf.readableBytes() < MIN_HEADER_LENGTH) { return; }
@@ -178,6 +184,7 @@ class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
             buf.resetReaderIndex();
             return;
         }
+        alignedBuf.alignRead(8);
 
         toRead = header.getMessageBodyLength();
         byteOrder = order;
@@ -205,6 +212,8 @@ class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
             // todo: don't catch such a broad exception
             // hack: ignore list out of bounds etc.
             if (e.getClass() != IndexOutOfBoundsException.class) { throw e; }
+
+            log.trace("Need more data");
 
             return null;
         }

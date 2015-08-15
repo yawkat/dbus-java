@@ -74,6 +74,7 @@ class BodyDecoder extends ByteToMessageDecoder {
             in.readerIndex(itemStart);
             return;
         }
+        log.trace("Decoded object {}", object);
 
         bodyObjects.add(object);
         currentTypeIndex++;

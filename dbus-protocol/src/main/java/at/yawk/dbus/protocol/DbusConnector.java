@@ -85,9 +85,9 @@ public class DbusConnector {
 
         DbusChannelImpl dbusChannel = new DbusChannelImpl(channel, swappableConsumer);
 
-        channel.write(MessageFactory.methodCall(
-                "/org/freedesktop/DBus",
-                null,
+        dbusChannel.write(MessageFactory.methodCall(
+                "/",
+                "org.freedesktop.DBus",
                 "org.freedesktop.DBus",
                 "Hello"
         ));

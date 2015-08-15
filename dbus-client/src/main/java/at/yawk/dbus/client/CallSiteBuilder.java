@@ -67,10 +67,19 @@ class CallSiteBuilder implements Request {
         child.bus = bus;
         child.requestType = requestType;
         child.messageType = messageType;
+
         child.objectPath = objectPath;
         child.objectPathObject = objectPathObject;
+
         child.interfaceName = interfaceName;
+        child.interfaceObject = interfaceObject;
+
+        child.destination = destination;
+        child.destinationObject = destinationObject;
+
         child.member = member;
+        child.memberObject = memberObject;
+
         child.actions = childTransient ? actions : new ArrayList<>(actions);
         child.responseValidators = childTransient ? responseValidators : new ArrayList<>(responseValidators);
         child.arguments = new ArrayList<>(arguments);

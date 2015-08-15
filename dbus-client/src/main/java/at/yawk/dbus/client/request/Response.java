@@ -29,6 +29,6 @@ public class Response {
     }
 
     public static Response error(String error, List<DbusObject> reply) {
-        return new Response(null, error);
+        return new Response(reply, error);
     }
 }
