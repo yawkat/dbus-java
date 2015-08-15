@@ -16,7 +16,6 @@ import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollServerDomainSocketChannel;
 import io.netty.channel.unix.DomainSocketAddress;
 import java.io.File;
-import java.net.InetSocketAddress;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
@@ -29,16 +28,7 @@ import org.testng.annotations.Test;
 public class DbusConnectorTest {
     @Test(enabled = false)
     public void testDefault() throws Exception {
-        DbusChannel channel = new DbusConnector().connect(
-                DbusAddress.fromTcpAddress(new InetSocketAddress("localhost", 10000))
-        );
-
-        channel.write(MessageFactory.methodCall(
-                "/org/freedesktop/DBus",
-                null,
-                "org.freedesktop.DBus",
-                "Hello"
-        ));
+        DbusChannel channel = new DbusConnector().connectSystem();
 
         DbusMessage message = MessageFactory.methodCall(
                 "/org/freedesktop/UPower/devices/DisplayDevice",

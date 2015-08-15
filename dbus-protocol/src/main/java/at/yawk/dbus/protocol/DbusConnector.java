@@ -2,7 +2,7 @@ package at.yawk.dbus.protocol;
 
 import at.yawk.dbus.protocol.auth.AuthClient;
 import at.yawk.dbus.protocol.auth.mechanism.AuthMechanism;
-import at.yawk.dbus.protocol.auth.mechanism.DbusCookieSha1AuthMechanism;
+import at.yawk.dbus.protocol.auth.mechanism.ExternalAuthMechanism;
 import at.yawk.dbus.protocol.codec.DbusMainProtocol;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.Unpooled;
@@ -33,6 +33,7 @@ public class DbusConnector {
      * The consumer to use for initial messages.
      */
     @Setter private MessageConsumer initialConsumer = MessageConsumer.DISCARD;
+    @Setter private AuthMechanism authMechanism;
 
     public DbusConnector() {
         bootstrap = new Bootstrap();
@@ -71,8 +72,10 @@ public class DbusConnector {
         // I really don't get why dbus does this
         channel.write(Unpooled.wrappedBuffer(new byte[]{ 0 }));
 
-        AuthMechanism mechanism = new DbusCookieSha1AuthMechanism();
-        CompletionStage<?> completionPromise = authClient.startAuth(channel, mechanism);
+        if (authMechanism == null) {
+            authMechanism = new ExternalAuthMechanism();
+        }
+        CompletionStage<?> completionPromise = authClient.startAuth(channel, authMechanism);
 
         SwappableMessageConsumer swappableConsumer = new SwappableMessageConsumer(initialConsumer);
         completionPromise.toCompletableFuture().thenRun(() -> {
@@ -80,7 +83,16 @@ public class DbusConnector {
             log.trace("Pipeline is now {}", channel.pipeline());
         }).get();
 
-        return new DbusChannelImpl(channel, swappableConsumer);
+        DbusChannelImpl dbusChannel = new DbusChannelImpl(channel, swappableConsumer);
+
+        channel.write(MessageFactory.methodCall(
+                "/org/freedesktop/DBus",
+                null,
+                "org.freedesktop.DBus",
+                "Hello"
+        ));
+
+        return dbusChannel;
     }
 
     public DbusChannel connect(DbusAddress address) throws Exception {
