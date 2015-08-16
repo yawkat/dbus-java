@@ -16,7 +16,7 @@ import lombok.Getter;
  */
 public enum BasicType implements TypeDefinition {
     BYTE('y', 1),
-    BOOLEAN('b', 1),
+    BOOLEAN('b', 4), // why does dbus use 4 bytes for this?!
     INT16('n', 2),
     UINT16('q', 2),
     INT32('i', 4),

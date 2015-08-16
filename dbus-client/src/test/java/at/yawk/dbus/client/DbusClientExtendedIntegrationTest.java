@@ -1,6 +1,7 @@
 package at.yawk.dbus.client;
 
 import at.yawk.dbus.client.annotation.*;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -25,11 +26,12 @@ public class DbusClientExtendedIntegrationTest {
         client.close();
     }
 
-    @Test(timeOut = 5000L, enabled = true)
-    public void test() throws Exception {
+    // this is a general listener test using spotify
+    @Test(timeOut = 5000L, enabled = false)
+    public void testSpotify() throws Exception {
         client.connectSession();
 
-        TestItf itf = client.implement(TestItf.class);
+        Spotify itf = client.implement(Spotify.class);
 
         AtomicInteger changeCounter = new AtomicInteger();
         itf.onPropertiesChanged(changeCounter::incrementAndGet);
@@ -43,11 +45,23 @@ public class DbusClientExtendedIntegrationTest {
         Assert.assertTrue(changeCounter.get() >= 2, changeCounter.toString());
     }
 
+    // this is a listener test with many changing properties using upower
+    @Test(enabled = true)
+    public void testPower() throws Exception {
+        client.connectSystem();
+
+        Power itf = client.implement(Power.class);
+
+        CountDownLatch latch = new CountDownLatch(1);
+        itf.onPropertiesChanged(latch::countDown);
+        latch.await();
+    }
+
     @SessionBus
     @Destination("org.mpris.MediaPlayer2.spotify")
     @ObjectPath("/org/mpris/MediaPlayer2")
     @Interface("org.mpris.MediaPlayer2.Player")
-    interface TestItf {
+    interface Spotify {
         @Call
         @Member("PlayPause")
         void playPause();
@@ -56,6 +70,17 @@ public class DbusClientExtendedIntegrationTest {
         @Member("PlaybackStatus")
         String getPlaybackStatus();
 
+        @Interface("org.freedesktop.DBus.Properties")
+        @Member("PropertiesChanged")
+        @Listener
+        void onPropertiesChanged(Runnable listener);
+    }
+
+    @SystemBus
+    @Destination("org.freedesktop.UPower")
+    @ObjectPath("/org/freedesktop/UPower/devices/DisplayDevice")
+    @Interface("org.freedesktop.UPower.Device")
+    public interface Power {
         @Interface("org.freedesktop.DBus.Properties")
         @Member("PropertiesChanged")
         @Listener
