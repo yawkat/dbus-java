@@ -253,7 +253,8 @@ class CallSiteBuilder implements Request {
             rule.setMessageType(getType());
             rule.setPath(getObjectPath());
             rule.setInterfaceName(interfaceName);
-            rule.setDestination(destination);
+            // this breaks some listens and shouldn't really be used anyway
+            //rule.setDestination(destination);
             rule.setMember(member);
             executor.listen(bus, rule, listener);
             return null;

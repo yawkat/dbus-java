@@ -1,8 +1,8 @@
 package at.yawk.dbus.client;
 
 import at.yawk.dbus.client.annotation.*;
-import at.yawk.dbus.databind.annotation.Primitive;
-import at.yawk.dbus.protocol.type.BasicType;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -27,20 +27,38 @@ public class DbusClientExtendedIntegrationTest {
 
     @Test(timeOut = 5000L, enabled = false)
     public void test() throws Exception {
-        client.connectSystem();
+        client.connectSession();
 
         TestItf itf = client.implement(TestItf.class);
-        System.out.println(itf.getConnectivity());
+
+        AtomicInteger changeCounter = new AtomicInteger();
+        itf.onPropertiesChanged(changeCounter::incrementAndGet);
+
+        String initial = itf.getPlaybackStatus();
+        itf.playPause();
+        Assert.assertNotEquals(itf.getPlaybackStatus(), initial);
+        itf.playPause();
+        Assert.assertEquals(itf.getPlaybackStatus(), initial);
+
+        Assert.assertTrue(changeCounter.get() > 2);
     }
 
-    @SystemBus
-    @Destination("org.freedesktop.NetworkManager")
-    @ObjectPath("/org/freedesktop/NetworkManager")
-    @Interface("org.freedesktop.NetworkManager")
+    @SessionBus
+    @Destination("org.mpris.MediaPlayer2.spotify")
+    @ObjectPath("/org/mpris/MediaPlayer2")
+    @Interface("org.mpris.MediaPlayer2.Player")
     interface TestItf {
+        @Call
+        @Member("PlayPause")
+        void playPause();
+
         @GetProperty
-        @Member("Connectivity")
-        @Primitive(BasicType.UINT32)
-        int getConnectivity();
+        @Member("PlaybackStatus")
+        String getPlaybackStatus();
+
+        @Interface("org.freedesktop.DBus.Properties")
+        @Member("PropertiesChanged")
+        @Listener
+        void onPropertiesChanged(Runnable listener);
     }
 }
