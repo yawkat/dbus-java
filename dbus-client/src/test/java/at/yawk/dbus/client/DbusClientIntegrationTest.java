@@ -32,9 +32,11 @@ public class DbusClientIntegrationTest {
         // these will probably throw or something on failure
 
         List<String> systemNames = itf.listNamesSystem();
+        System.out.println(systemNames);
         Assert.assertTrue(systemNames.size() > 3);
 
         List<String> sessionNames = itf.listNamesSession();
+        System.out.println(sessionNames);
         Assert.assertTrue(sessionNames.size() > 3);
 
         Assert.assertNotEquals(systemNames, sessionNames);
