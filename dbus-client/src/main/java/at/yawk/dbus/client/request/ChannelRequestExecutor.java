@@ -18,6 +18,7 @@ public class ChannelRequestExecutor implements RequestExecutor {
     private final DbusChannel channel;
     private final ChannelRequestStateHolder<Response> requestHolder = new ChannelRequestStateHolder<>();
     private final ListenerHolder listenerHolder = new ListenerHolder();
+    private final EventThreadWatcher eventThreadWatcher = new EventThreadWatcher();
 
     public ChannelRequestExecutor(DbusChannel channel) {
         this.channel = channel;
@@ -27,6 +28,7 @@ public class ChannelRequestExecutor implements RequestExecutor {
 
     @Override
     public Response execute(Request request) throws Exception {
+        eventThreadWatcher.checkLock();
         return executeLater(request).get();
     }
 
@@ -44,7 +46,12 @@ public class ChannelRequestExecutor implements RequestExecutor {
         );
         Consumer<DbusMessage> listenerH = msg -> {
             MessageBody body = msg.getBody();
-            listener.accept(body == null ? Collections.emptyList() : body.getArguments());
+            eventThreadWatcher.lock();
+            try {
+                listener.accept(body == null ? Collections.emptyList() : body.getArguments());
+            } finally {
+                eventThreadWatcher.unlock();
+            }
         };
         if (listenerHolder.addListener(rule, listenerH)) {
             channel.write(registrationMessage);
