@@ -30,10 +30,6 @@ public class DataBinderTest {
         return binder.getBinder(type, Arrays.asList(annotations)).decode(object);
     }
 
-    private DbusObject encode(Object o) {
-        return encode(o.getClass(), o);
-    }
-
     @SuppressWarnings("unchecked")
     private DbusObject encode(Type type, Object o, Annotation... annotations) {
         return ((Binder) binder.getBinder(type, Arrays.asList(annotations))).encode(o);

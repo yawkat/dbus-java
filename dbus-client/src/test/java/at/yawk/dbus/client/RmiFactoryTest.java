@@ -7,6 +7,7 @@ import at.yawk.dbus.client.request.Response;
 import at.yawk.dbus.databind.DataBinder;
 import at.yawk.dbus.protocol.MessageType;
 import at.yawk.dbus.protocol.object.BasicObject;
+import at.yawk.dbus.protocol.object.VariantObject;
 import java.util.Collections;
 import java.util.NoSuchElementException;
 import java.util.function.Function;
@@ -28,7 +29,8 @@ public class RmiFactoryTest {
 
     @Test
     public void testGetProperty() {
-        setUp(request -> Response.success(Collections.singletonList(BasicObject.createString("hi"))));
+        setUp(request -> Response.success(Collections.singletonList(
+                VariantObject.create(BasicObject.createString("hi")))));
 
         Assert.assertEquals(instance.getTest(), "hi");
         executor.assertEquals(

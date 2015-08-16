@@ -36,8 +36,17 @@ public class PrimitiveAnnotationBinderTransformer implements AnnotationBinderTra
 
     @Override
     public Binder<?> wrap(Primitive annotation, Binder<?> binder) {
-        BasicType innerType = (BasicType) binder.getType();
         BasicType outerType = annotation.value();
+        return transformBinder(binder, outerType);
+    }
+
+    /**
+     * @param binder    The binder to transform.
+     * @param outerType The encoded type of the new binder.
+     * @return The wrapped binder.
+     */
+    public static Binder<?> transformBinder(Binder<?> binder, BasicType outerType) {
+        BasicType innerType = (BasicType) binder.getType();
 
         if (innerType == outerType) { return binder; }
 

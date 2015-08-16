@@ -8,6 +8,7 @@ import at.yawk.dbus.client.request.RequestExecutor;
 import at.yawk.dbus.client.request.Response;
 import at.yawk.dbus.databind.DataBinder;
 import at.yawk.dbus.databind.binder.Binder;
+import at.yawk.dbus.databind.binder.PrimitiveAnnotationBinderTransformer;
 import at.yawk.dbus.databind.binder.TypeUtil;
 import at.yawk.dbus.protocol.MatchRule;
 import at.yawk.dbus.protocol.MessageType;
@@ -15,6 +16,7 @@ import at.yawk.dbus.protocol.object.BasicObject;
 import at.yawk.dbus.protocol.object.DbusObject;
 import at.yawk.dbus.protocol.object.ObjectPathObject;
 import at.yawk.dbus.protocol.object.StringObject;
+import at.yawk.dbus.protocol.type.BasicType;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
@@ -58,6 +60,10 @@ class CallSiteBuilder implements Request {
 
     // todo: properly support array returns
     Binder<?> returnBinder;
+    /**
+     * Unwrap the returned variant before passing to the return binder; used by property get
+     */
+    boolean unwrapReturnVariant;
 
     // todo: bake these if possible
     ObjectPathObject objectPathObject;
@@ -91,6 +97,7 @@ class CallSiteBuilder implements Request {
         child.arguments = new ArrayList<>(arguments);
         child.markedWithListener = markedWithListener;
         child.returnBinder = returnBinder;
+        child.unwrapReturnVariant = unwrapReturnVariant;
         return child;
     }
 
@@ -174,6 +181,10 @@ class CallSiteBuilder implements Request {
 
             if (method.getReturnType() != void.class) {
                 returnBinder = dataBinder.getBinder(method.getGenericReturnType(), method);
+                if (unwrapReturnVariant) {
+                    returnBinder = PrimitiveAnnotationBinderTransformer.transformBinder(
+                            returnBinder, BasicType.VARIANT);
+                }
             }
         }
     }
@@ -197,6 +208,7 @@ class CallSiteBuilder implements Request {
         ifPresent(element, Signal.class, a -> this.messageType = MessageType.SIGNAL);
         ifPresent(element, GetProperty.class, a -> {
             this.messageType = MessageType.METHOD_CALL;
+            this.unwrapReturnVariant = true;
 
             actions.add((site, args) -> {
                 site.arguments.add(BasicObject.createString(site.interfaceName));
@@ -274,11 +286,5 @@ class CallSiteBuilder implements Request {
 
     private interface CallSiteAction {
         void apply(CallSiteBuilder site, Object[] methodArgs) throws Exception;
-    }
-
-    private enum RequestType {
-        CALL,
-        SIGNAL,
-        GET_PROPERTY,
     }
 }
