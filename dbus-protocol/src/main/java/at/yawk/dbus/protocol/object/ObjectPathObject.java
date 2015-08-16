@@ -1,6 +1,7 @@
 package at.yawk.dbus.protocol.object;
 
 import at.yawk.dbus.protocol.type.BasicType;
+import io.netty.util.AsciiString;
 import java.nio.charset.StandardCharsets;
 import lombok.EqualsAndHashCode;
 
@@ -56,6 +57,10 @@ public class ObjectPathObject extends BasicObject {
             throw new DeserializerException("Object path not followed by NUL byte");
         }
         return new ObjectPathObject(bytes);
+    }
+
+    public CharSequence getSequence() {
+        return new AsciiString(bytes, false);
     }
 
     @Override

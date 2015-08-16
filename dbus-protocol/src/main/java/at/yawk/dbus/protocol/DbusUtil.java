@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.util.UUID;
+import javax.annotation.Nonnull;
 import javax.xml.bind.DatatypeConverter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -60,5 +61,24 @@ public class DbusUtil {
             bos.write(buf, 0, len);
         }
         return bos.toString();
+    }
+
+    public static void validateConnectionName(@Nonnull String name) {
+        if (!name.matches("([a-zA-Z_][\\w-]*\\.)+([a-zA-Z_][\\w-]*)") &&
+            !name.matches(":[\\w-]+")) {
+            throw new IllegalArgumentException("Invalid connection name: " + name);
+        }
+    }
+
+    public static void validateInterfaceName(@Nonnull String name) {
+        if (!name.matches("([a-zA-Z_][\\w-]*\\.)+([a-zA-Z_][\\w-]*)")) {
+            throw new IllegalArgumentException("Invalid interface name: " + name);
+        }
+    }
+
+    public static void validateMemberName(@Nonnull String name) {
+        if (!name.matches("\\w+")) {
+            throw new IllegalArgumentException("Invalid member name: " + name);
+        }
     }
 }

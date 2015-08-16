@@ -11,18 +11,20 @@ import lombok.Getter;
  * @author yawkat
  */
 public enum MessageType {
-    METHOD_CALL(1, HeaderField.PATH, HeaderField.MEMBER),
-    METHOD_RETURN(2, HeaderField.REPLY_SERIAL),
-    ERROR(3, HeaderField.REPLY_SERIAL, HeaderField.ERROR_NAME),
-    SIGNAL(4, HeaderField.PATH, HeaderField.MEMBER, HeaderField.INTERFACE);
+    METHOD_CALL(1, "method_call", HeaderField.PATH, HeaderField.MEMBER),
+    METHOD_RETURN(2, "method_return", HeaderField.REPLY_SERIAL),
+    ERROR(3, "error", HeaderField.REPLY_SERIAL, HeaderField.ERROR_NAME),
+    SIGNAL(4, "signal", HeaderField.PATH, HeaderField.MEMBER, HeaderField.INTERFACE);
 
     private static final MessageType[] BY_ID;
 
     @Getter private final byte id;
+    @Getter private final String name;
     @Getter private final Set<HeaderField> requiredHeaders;
 
-    MessageType(int id, HeaderField... requiredHeaders) {
+    MessageType(int id, String name, HeaderField... requiredHeaders) {
         this.id = (byte) id;
+        this.name = name;
         this.requiredHeaders = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(requiredHeaders)));
     }
 
