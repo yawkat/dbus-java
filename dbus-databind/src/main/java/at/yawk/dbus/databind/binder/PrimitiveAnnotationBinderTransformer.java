@@ -3,6 +3,7 @@ package at.yawk.dbus.databind.binder;
 import at.yawk.dbus.databind.annotation.Primitive;
 import at.yawk.dbus.protocol.object.BasicObject;
 import at.yawk.dbus.protocol.object.DbusObject;
+import at.yawk.dbus.protocol.object.VariantObject;
 import at.yawk.dbus.protocol.type.BasicType;
 import at.yawk.dbus.protocol.type.TypeDefinition;
 import java.util.HashMap;
@@ -59,6 +60,15 @@ public class PrimitiveAnnotationBinderTransformer implements AnnotationBinderTra
                     outerType,
                     o -> innerFactory.apply(o.stringValue()),
                     o -> outerFactory.apply(o.stringValue())
+            );
+        }
+
+        if (outerType == BasicType.VARIANT) {
+            return wrap(
+                    binder,
+                    outerType,
+                    DbusObject::getValue,
+                    VariantObject::create
             );
         }
 

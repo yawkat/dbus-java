@@ -2,16 +2,14 @@ package at.yawk.dbus.databind;
 
 import at.yawk.dbus.databind.annotation.Primitive;
 import at.yawk.dbus.databind.binder.Binder;
-import at.yawk.dbus.protocol.object.ArrayObject;
-import at.yawk.dbus.protocol.object.BasicObject;
-import at.yawk.dbus.protocol.object.DbusObject;
-import at.yawk.dbus.protocol.object.DictObject;
+import at.yawk.dbus.protocol.object.*;
 import at.yawk.dbus.protocol.type.ArrayTypeDefinition;
 import at.yawk.dbus.protocol.type.BasicType;
 import at.yawk.dbus.protocol.type.DictTypeDefinition;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.*;
+import org.mockito.Mockito;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -28,11 +26,11 @@ public class DataBinderTest {
         binder = new DataBinder();
     }
 
-    private Object decode(Type type, DbusObject object) {
-        return binder.getBinder(type).decode(object);
+    private Object decode(Type type, DbusObject object, Annotation... annotations) {
+        return binder.getBinder(type, Arrays.asList(annotations)).decode(object);
     }
 
-    private <T> DbusObject encode(T o) {
+    private DbusObject encode(Object o) {
         return encode(o.getClass(), o);
     }
 
@@ -53,18 +51,15 @@ public class DataBinderTest {
     }
 
     @Test
-    public void testPrimitiveConvertImplicit() {
-        testConvert(byte.class, BasicObject.createUint64(0x99L), (byte) 0x99, new Primitive() {
-            @Override
-            public Class<? extends Annotation> annotationType() {
-                return Primitive.class;
-            }
+    public void testPrimitiveConvertExplicit() {
+        Primitive primitive = Mockito.mock(Primitive.class, Mockito.withSettings());
+        Mockito.<Object>when(primitive.annotationType()).thenReturn(Primitive.class);
 
-            @Override
-            public BasicType value() {
-                return BasicType.UINT64;
-            }
-        });
+        Mockito.when(primitive.value()).thenReturn(BasicType.UINT64);
+        testConvert(byte.class, BasicObject.createUint64(0x99L), (byte) 0x99, primitive);
+
+        Mockito.when(primitive.value()).thenReturn(BasicType.VARIANT);
+        testConvert(String.class, VariantObject.create(BasicObject.createString("test")), "test", primitive);
     }
 
     @Test
@@ -126,7 +121,7 @@ public class DataBinderTest {
 
     private void testConvert(Type javaType, DbusObject dbusRepresentation, Object javaRepresentation,
                              Annotation... annotations) {
-        assertEquals(decode(javaType, dbusRepresentation), javaRepresentation);
+        assertEquals(decode(javaType, dbusRepresentation, annotations), javaRepresentation);
         assertEquals(encode(javaType, javaRepresentation, annotations), dbusRepresentation);
     }
 }

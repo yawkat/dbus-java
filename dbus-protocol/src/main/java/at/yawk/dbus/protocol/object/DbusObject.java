@@ -24,7 +24,7 @@ public interface DbusObject {
      * @see VariantObject#getValue()
      */
     default DbusObject getValue() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(toString());
     }
 
     /**
@@ -32,7 +32,7 @@ public interface DbusObject {
      * @see StructObject#getValues()
      */
     default List<DbusObject> getValues() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(toString());
     }
 
     /**
@@ -40,69 +40,69 @@ public interface DbusObject {
      * @see StructObject#get(int)
      */
     default DbusObject get(int i) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(toString());
     }
 
     /**
      * @see DictObject#getEntries()
      */
     default Map<DbusObject, DbusObject> getEntries() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(toString());
     }
 
     /**
      * @see BasicObject
      */
     default String stringValue() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(toString());
     }
 
     /**
      * @see BasicObject
      */
     default List<TypeDefinition> typeValue() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(toString());
     }
 
     /**
      * @see BasicObject
      */
     default boolean booleanValue() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(toString());
     }
 
     /**
      * @see BasicObject
      */
     default byte byteValue() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(toString());
     }
 
     /**
      * @see BasicObject
      */
     default short shortValue() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(toString());
     }
 
     /**
      * @see BasicObject
      */
     default int intValue() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(toString());
     }
 
     /**
      * @see BasicObject
      */
     default long longValue() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(toString());
     }
 
     /**
      * @see BasicObject
      */
     default double doubleValue() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(toString());
     }
 }
