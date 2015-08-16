@@ -1,5 +1,6 @@
 package at.yawk.dbus.protocol;
 
+import javax.annotation.Nullable;
 import lombok.Data;
 
 /**
@@ -8,5 +9,5 @@ import lombok.Data;
 @Data
 public class DbusMessage {
     private MessageHeader header;
-    private MessageBody body;
+    @Nullable private MessageBody body;
 }

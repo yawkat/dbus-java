@@ -1,16 +1,21 @@
 package at.yawk.dbus.protocol;
 
+import at.yawk.dbus.protocol.object.DbusObject;
 import at.yawk.dbus.protocol.object.ObjectPathObject;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author yawkat
  */
 @Data
+@Slf4j
 public class MatchRule {
     @Nullable MessageType messageType;
     @Nullable String sender;
@@ -100,6 +105,125 @@ public class MatchRule {
         }
 
         return builder.toString();
+    }
+
+    public boolean matches(DbusMessage message) {
+        MessageHeader header = message.getHeader();
+        MessageBody bodyObj = message.getBody();
+        List<DbusObject> body = bodyObj == null ? Collections.emptyList() : bodyObj.getArguments();
+
+        if (messageType != null &&
+            header.getMessageType() != messageType) {
+            log.trace("type: {} != {}", messageType, header.getMessageType());
+            return false;
+        }
+
+        if (sender != null) {
+            DbusObject senderObject = header.getHeaderFields().get(HeaderField.SENDER);
+            if (senderObject != null &&
+                !sender.equals(senderObject.stringValue())) {
+                log.trace("sender: {} != {}", sender, senderObject);
+                return false;
+            }
+        }
+
+        if (interfaceName != null) {
+            DbusObject interfaceObject = header.getHeaderFields().get(HeaderField.INTERFACE);
+            if (interfaceObject != null &&
+                !interfaceName.equals(interfaceObject.stringValue())) {
+                log.trace("interface: {} != {}", interfaceName, interfaceObject);
+                return false;
+            }
+        }
+
+        if (member != null) {
+            DbusObject memberObject = header.getHeaderFields().get(HeaderField.MEMBER);
+            if (memberObject != null &&
+                !member.equals(memberObject.stringValue())) {
+                log.trace("member: {} != {}", member, memberObject);
+                return false;
+            }
+        }
+
+        if (path != null) {
+            DbusObject pathObject = header.getHeaderFields().get(HeaderField.PATH);
+            if (pathObject != null &&
+                !path.equals(pathObject)) {
+                log.trace("path: {} != {}", path, pathObject);
+                return false;
+            }
+        }
+
+        if (pathNamespace != null) {
+            DbusObject pathObject = header.getHeaderFields().get(HeaderField.PATH);
+            if (pathObject != null &&
+                !matchesNamespace(pathNamespace, (ObjectPathObject) pathObject)) {
+                log.trace("pathNamespace: {} != {}", pathNamespace, pathObject);
+                return false;
+            }
+        }
+
+        /*
+        if (destination != null) {
+            DbusObject destinationObject = header.getHeaderFields().get(HeaderField.DESTINATION);
+            if (destinationObject != null &&
+                !destination.equals(destinationObject.stringValue())) {
+                log.trace("destination: {} != {}", destination, destinationObject);
+                return false;
+            }
+        }
+        */
+
+        if (this.arguments != null) {
+            for (Map.Entry<Integer, String> entry : this.arguments.entrySet()) {
+                int i = entry.getKey();
+                if (i >= body.size()) {
+                    return false;
+                }
+                if (!body.get(i).stringValue().equals(entry.getValue())) {
+                    return false;
+                }
+            }
+        }
+
+        if (this.argumentPaths != null) {
+            for (Map.Entry<Integer, ObjectPathObject> entry : this.argumentPaths.entrySet()) {
+                int i = entry.getKey();
+                if (i >= body.size()) {
+                    return false;
+                }
+                // string value compare since we need to be able to match strings too
+                if (!body.get(i).stringValue().equals(entry.getValue().stringValue())) {
+                    return false;
+                }
+            }
+        }
+
+        if (this.arg0Namespace != null) {
+            if (body.isEmpty() ||
+                !matchesNamespace(arg0Namespace, (ObjectPathObject) body.get(0))) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static boolean matchesNamespace(ObjectPathObject namespace, ObjectPathObject member) {
+        CharSequence namespaceSequence = namespace.getSequence();
+        CharSequence memberSequence = member.getSequence();
+        if (namespaceSequence.length() > memberSequence.length()) { return false; }
+        for (int i = 0; i < namespaceSequence.length(); i++) {
+            if (namespaceSequence.charAt(i) != memberSequence.charAt(i)) {
+                return false;
+            }
+        }
+        if (memberSequence.length() > namespaceSequence.length() &&
+            memberSequence.charAt(namespaceSequence.length()) != '/') {
+            return false;
+        }
+
+        return true;
     }
 
     private static void append(StringBuilder builder, String key, @Nullable CharSequence item) {

@@ -1,5 +1,6 @@
 package at.yawk.dbus.client;
 
+import at.yawk.dbus.client.error.RemoteException;
 import at.yawk.dbus.client.request.ChannelRequestExecutor;
 import at.yawk.dbus.client.request.Request;
 import at.yawk.dbus.client.request.RequestExecutor;
@@ -8,14 +9,14 @@ import at.yawk.dbus.databind.DataBinder;
 import at.yawk.dbus.protocol.DbusAddress;
 import at.yawk.dbus.protocol.DbusChannel;
 import at.yawk.dbus.protocol.DbusConnector;
+import at.yawk.dbus.protocol.MatchRule;
+import at.yawk.dbus.protocol.object.DbusObject;
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Consumer;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Value;
@@ -94,7 +95,15 @@ public class DbusClient implements Closeable {
     private class BusSelectingRequestExecutor implements RequestExecutor {
         @Override
         public Response execute(Request request) throws Exception {
-            String busName = request.getBus();
+            return selectBus(request.getBus()).execute(request);
+        }
+
+        @Override
+        public Runnable listen(String bus, MatchRule rule, Consumer<List<DbusObject>> listener) throws RemoteException {
+            return selectBus(bus).listen(bus, rule, listener);
+        }
+
+        private ChannelRequestExecutor selectBus(String busName) {
             Objects.requireNonNull(busName, "bus");
 
             BusHolder holder;
@@ -107,7 +116,7 @@ public class DbusClient implements Closeable {
             if (holder == null) {
                 throw new NoSuchElementException("Not connected to bus " + busName);
             }
-            return holder.executor.execute(request);
+            return holder.executor;
         }
     }
 }

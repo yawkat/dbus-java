@@ -8,6 +8,8 @@ import at.yawk.dbus.client.request.RequestExecutor;
 import at.yawk.dbus.client.request.Response;
 import at.yawk.dbus.databind.DataBinder;
 import at.yawk.dbus.databind.binder.Binder;
+import at.yawk.dbus.databind.binder.TypeUtil;
+import at.yawk.dbus.protocol.MatchRule;
 import at.yawk.dbus.protocol.MessageType;
 import at.yawk.dbus.protocol.object.BasicObject;
 import at.yawk.dbus.protocol.object.DbusObject;
@@ -18,6 +20,7 @@ import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
@@ -25,23 +28,23 @@ import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author yawkat
  */
 @ToString(of = {
         "messageType",
-        "requestType",
         "objectPath",
         "interfaceName",
         "member",
         "destination",
         "arguments",
 }, doNotUseGetters = true)
+@Slf4j
 class CallSiteBuilder implements Request {
     @Getter String bus;
     MessageType messageType;
-    RequestType requestType;
     String objectPath;
     String interfaceName;
     String member;
@@ -50,9 +53,13 @@ class CallSiteBuilder implements Request {
     @Getter List<DbusObject> arguments = new ArrayList<>();
     List<ResponseValidator> responseValidators = new ArrayList<>();
 
+    boolean markedWithListener;
+    Consumer<List<DbusObject>> listener;
+
     // todo: properly support array returns
     Binder<?> returnBinder;
 
+    // todo: bake these if possible
     ObjectPathObject objectPathObject;
     StringObject interfaceObject;
     StringObject memberObject;
@@ -65,7 +72,6 @@ class CallSiteBuilder implements Request {
     CallSiteBuilder createChild(boolean childTransient) {
         CallSiteBuilder child = new CallSiteBuilder();
         child.bus = bus;
-        child.requestType = requestType;
         child.messageType = messageType;
 
         child.objectPath = objectPath;
@@ -83,6 +89,7 @@ class CallSiteBuilder implements Request {
         child.actions = childTransient ? actions : new ArrayList<>(actions);
         child.responseValidators = childTransient ? responseValidators : new ArrayList<>(responseValidators);
         child.arguments = new ArrayList<>(arguments);
+        child.markedWithListener = markedWithListener;
         child.returnBinder = returnBinder;
         return child;
     }
@@ -127,19 +134,57 @@ class CallSiteBuilder implements Request {
         decorateFromAnnotations(method);
 
         Type[] genericParameterTypes = method.getGenericParameterTypes();
-        for (int i = 0; i < genericParameterTypes.length; i++) {
-            Type parameter = genericParameterTypes[i];
-            Binder binder = dataBinder.getBinder(parameter);
-            final int finalI = i;
-            actions.add((site, args) -> site.arguments.add(binder.encode(args[finalI])));
-        }
 
-        if (method.getReturnType() != void.class) {
-            returnBinder = dataBinder.getBinder(method.getGenericReturnType(), method);
+        if (markedWithListener) {
+            if (genericParameterTypes.length != 1) {
+                throw new IllegalArgumentException("Invalid parameter count on listener " + method);
+            }
+            int listenerParameterIndex = 0;
+
+            Type listenerParameter = genericParameterTypes[listenerParameterIndex];
+            Class<?> raw = TypeUtil.getRawType(listenerParameter);
+            if (raw == Runnable.class) {
+                actions.add((site, args) -> {
+                    Runnable runnable = (Runnable) args[listenerParameterIndex];
+                    site.listener = o -> runnable.run();
+                });
+            } else if (raw == Consumer.class) {
+                actions.add((site, args) -> {
+                    Consumer consumer = (Consumer) args[listenerParameterIndex];
+                    site.listener = o -> consumer.accept(decodeReply(o));
+                });
+                returnBinder = dataBinder.getBinder(
+                        TypeUtil.getTypeVariable(listenerParameter, Consumer.class, "T"));
+            } else {
+                throw new IllegalArgumentException("Unsupported listener type " + raw.getName());
+            }
+
+            if (method.getReturnType() != void.class) {
+                throw new IllegalArgumentException("Unsupported return type on listener method " + method);
+            }
+
+        } else {
+            for (int i = 0; i < genericParameterTypes.length; i++) {
+                Type parameter = genericParameterTypes[i];
+                Annotation[] annotations = method.getParameterAnnotations()[i];
+                Binder binder = dataBinder.getBinder(parameter, Arrays.asList(annotations));
+                final int finalI = i;
+                actions.add((site, args) -> site.arguments.add(binder.encode(args[finalI])));
+            }
+
+            if (method.getReturnType() != void.class) {
+                returnBinder = dataBinder.getBinder(method.getGenericReturnType(), method);
+            }
         }
     }
 
     private void decorateFromAnnotations(AnnotatedElement element) {
+        ifPresent(element, Listener.class, a -> {
+            markedWithListener = true;
+            if (messageType == null) {
+                messageType = MessageType.SIGNAL;
+            }
+        });
         ifPresent(element, Destination.class, a -> this.destination = a.value());
         ifPresent(element, Interface.class, a -> this.interfaceName = a.value());
         ifPresent(element, Member.class, a -> this.member = a.value());
@@ -148,16 +193,9 @@ class CallSiteBuilder implements Request {
         ifPresent(element, Bus.class, a -> this.bus = a.value());
         ifPresent(element, SystemBus.class, a -> this.bus = "system");
         ifPresent(element, SessionBus.class, a -> this.bus = "session");
-        ifPresent(element, Call.class, a -> {
-            this.requestType = RequestType.CALL;
-            this.messageType = MessageType.METHOD_CALL;
-        });
-        ifPresent(element, Signal.class, a -> {
-            this.requestType = RequestType.SIGNAL;
-            this.messageType = MessageType.SIGNAL;
-        });
+        ifPresent(element, Call.class, a -> this.messageType = MessageType.METHOD_CALL);
+        ifPresent(element, Signal.class, a -> this.messageType = MessageType.SIGNAL);
         ifPresent(element, GetProperty.class, a -> {
-            this.requestType = RequestType.GET_PROPERTY;
             this.messageType = MessageType.METHOD_CALL;
 
             actions.add((site, args) -> {
@@ -196,16 +234,34 @@ class CallSiteBuilder implements Request {
     }
 
     Object submit(RequestExecutor executor) throws Exception {
-        Response response = executor.execute(this);
-        for (ResponseValidator validator : responseValidators) {
-            validator.validate(response);
-        }
-        List<DbusObject> reply = response.getReply();
-        if (returnBinder == null) {
-            return null; // void
+        log.trace("Submitting call site {}", this);
+        if (markedWithListener) {
+            assert listener != null;
+            MatchRule rule = new MatchRule();
+            rule.setMessageType(getType());
+            rule.setPath(getObjectPath());
+            rule.setInterfaceName(interfaceName);
+            rule.setDestination(destination);
+            rule.setMember(member);
+            executor.listen(bus, rule, listener);
+            return null;
         } else {
-            return returnBinder.decode(reply.get(0));
+            assert listener == null;
+            Response response = executor.execute(this);
+            for (ResponseValidator validator : responseValidators) {
+                validator.validate(response);
+            }
+            List<DbusObject> reply = response.getReply();
+            if (returnBinder == null) {
+                return null; // void
+            } else {
+                return decodeReply(reply);
+            }
         }
+    }
+
+    private Object decodeReply(List<DbusObject> reply) {
+        return returnBinder.decode(reply.get(0));
     }
 
     private static <A extends Annotation> void ifPresent(AnnotatedElement element, Class<A> annotationClass,

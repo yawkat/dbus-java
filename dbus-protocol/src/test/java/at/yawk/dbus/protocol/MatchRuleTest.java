@@ -46,6 +46,11 @@ public class MatchRuleTest {
         );
     }
 
+    @Test
+    public void testMatch() throws Exception {
+        // todo
+    }
+
     static String escape(String s) {
         StringBuilder output = new StringBuilder();
         MatchRule.escape(s, output);

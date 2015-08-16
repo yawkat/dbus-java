@@ -62,8 +62,6 @@ public class TypeParser {
             throws MalformedTypeDefinitionException,
                    BufferUnderflowException {
 
-        log.trace("Parsing definition part {}", buffer);
-
         char code = buffer.get();
         switch (code) {
         case '(':

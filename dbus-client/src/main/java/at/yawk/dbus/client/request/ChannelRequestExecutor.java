@@ -1,10 +1,13 @@
 package at.yawk.dbus.client.request;
 
 import at.yawk.dbus.protocol.*;
+import at.yawk.dbus.protocol.object.BasicObject;
 import at.yawk.dbus.protocol.object.DbusObject;
 import at.yawk.dbus.protocol.object.StringObject;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -13,17 +16,51 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ChannelRequestExecutor implements RequestExecutor {
     private final DbusChannel channel;
-    private final ChannelRequestStateHolder<Response> stateHolder = new ChannelRequestStateHolder<>();
+    private final ChannelRequestStateHolder<Response> requestHolder = new ChannelRequestStateHolder<>();
+    private final ListenerHolder listenerHolder = new ListenerHolder();
 
     public ChannelRequestExecutor(DbusChannel channel) {
         this.channel = channel;
-        channel.closeStage().thenRun(stateHolder.createCleaner());
+        channel.closeStage().thenRun(requestHolder.createCleaner());
         channel.setMessageConsumer(new MessageConsumerImpl());
     }
 
     @Override
     public Response execute(Request request) throws Exception {
         return executeLater(request).get();
+    }
+
+    @Override
+    public Runnable listen(String bus, MatchRule rule, Consumer<List<DbusObject>> listener) {
+        String serialized = rule.serialize();
+        log.trace("Adding listener {} on match rule {}", listener, serialized);
+        StringObject ruleStringObject = BasicObject.createString(serialized);
+        DbusMessage registrationMessage = MessageFactory.methodCall(
+                "/",
+                "org.freedesktop.DBus",
+                "org.freedesktop.DBus",
+                "AddMatch",
+                ruleStringObject
+        );
+        Consumer<DbusMessage> listenerH = msg -> {
+            MessageBody body = msg.getBody();
+            listener.accept(body == null ? Collections.emptyList() : body.getArguments());
+        };
+        if (listenerHolder.addListener(rule, listenerH)) {
+            channel.write(registrationMessage);
+        }
+        return () -> {
+            if (listenerHolder.removeListener(rule, listenerH)) {
+                DbusMessage removeRegistrationMessage = MessageFactory.methodCall(
+                        "/",
+                        "org.freedesktop.DBus",
+                        "org.freedesktop.DBus",
+                        "RemoveMatch",
+                        ruleStringObject
+                );
+                channel.write(removeRegistrationMessage);
+            }
+        };
     }
 
     private CompletableFuture<Response> executeLater(Request request) {
@@ -44,7 +81,7 @@ public class ChannelRequestExecutor implements RequestExecutor {
         MessageBody body = new MessageBody();
         body.setArguments(request.getArguments());
 
-        CompletableFuture<Response> future = stateHolder.registerPending(serial);
+        CompletableFuture<Response> future = requestHolder.registerPending(serial);
 
         DbusMessage message = new DbusMessage();
         message.setHeader(header);
@@ -64,28 +101,26 @@ public class ChannelRequestExecutor implements RequestExecutor {
 
         @Override
         public boolean requireAccept(MessageHeader header) {
-            int serial = getReplySerial(header);
-            if (serial == 0) {
-                log.trace("Discarding {} because of missing serial", header);
-                return false;
-            }
-            return stateHolder.isPending(serial);
+            return true;
         }
 
         @Override
         public void accept(DbusMessage message) {
+            listenerHolder.post(message);
+
             int serial = getReplySerial(message.getHeader());
             if (serial == 0) {
                 return;
             }
             DbusObject errorNameObject = message.getHeader().getHeaderFields().get(HeaderField.ERROR_NAME);
-            List<DbusObject> arguments = message.getBody().getArguments();
+            MessageBody body = message.getBody();
+            List<DbusObject> arguments = body == null ? Collections.emptyList() : body.getArguments();
             assert arguments != null;
             Response response = errorNameObject == null ?
                     Response.success(arguments) :
                     Response.error(errorNameObject.stringValue(), arguments);
 
-            stateHolder.complete(serial, response);
+            requestHolder.complete(serial, response);
         }
     }
 }

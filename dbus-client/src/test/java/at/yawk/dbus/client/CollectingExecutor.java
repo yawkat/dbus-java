@@ -1,11 +1,16 @@
 package at.yawk.dbus.client;
 
+import at.yawk.dbus.client.error.RemoteException;
 import at.yawk.dbus.client.request.Request;
 import at.yawk.dbus.client.request.RequestExecutor;
 import at.yawk.dbus.client.request.Response;
+import at.yawk.dbus.protocol.MatchRule;
+import at.yawk.dbus.protocol.object.DbusObject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.testng.Assert;
@@ -16,7 +21,7 @@ import org.testng.internal.EclipseInterface;
  */
 @RequiredArgsConstructor
 class CollectingExecutor implements RequestExecutor {
-    private final RequestExecutor delegate;
+    private final Function<Request, Response> delegate;
     private final List<Request> requests = new ArrayList<>();
 
     void assertEquals(Request... requests) {
@@ -40,6 +45,11 @@ class CollectingExecutor implements RequestExecutor {
     @Override
     public Response execute(Request request) throws Exception {
         requests.add(request);
-        return delegate.execute(request);
+        return delegate.apply(request);
+    }
+
+    @Override
+    public Runnable listen(String bus, MatchRule rule, Consumer<List<DbusObject>> listener) throws RemoteException {
+        throw new UnsupportedOperationException();
     }
 }

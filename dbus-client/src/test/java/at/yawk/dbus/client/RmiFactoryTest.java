@@ -1,6 +1,7 @@
 package at.yawk.dbus.client;
 
 import at.yawk.dbus.client.annotation.*;
+import at.yawk.dbus.client.request.Request;
 import at.yawk.dbus.client.request.RequestExecutor;
 import at.yawk.dbus.client.request.Response;
 import at.yawk.dbus.databind.DataBinder;
@@ -8,6 +9,7 @@ import at.yawk.dbus.protocol.MessageType;
 import at.yawk.dbus.protocol.object.BasicObject;
 import java.util.Collections;
 import java.util.NoSuchElementException;
+import java.util.function.Function;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -18,7 +20,7 @@ public class RmiFactoryTest {
     private CollectingExecutor executor;
     private A instance;
 
-    private void setUp(RequestExecutor executor) {
+    private void setUp(Function<Request, Response> executor) {
         this.executor = new CollectingExecutor(executor);
         RmiFactory factory = new RmiFactory(new DataBinder(), this.executor);
         instance = factory.createRmiInstance(A.class);
