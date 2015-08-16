@@ -25,7 +25,7 @@ public class DbusClientExtendedIntegrationTest {
         client.close();
     }
 
-    @Test(timeOut = 5000L, enabled = false)
+    @Test(timeOut = 5000L, enabled = true)
     public void test() throws Exception {
         client.connectSession();
 
@@ -40,7 +40,7 @@ public class DbusClientExtendedIntegrationTest {
         itf.playPause();
         Assert.assertEquals(itf.getPlaybackStatus(), initial);
 
-        Assert.assertTrue(changeCounter.get() > 2);
+        Assert.assertTrue(changeCounter.get() >= 2, changeCounter.toString());
     }
 
     @SessionBus
