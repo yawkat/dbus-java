@@ -46,7 +46,7 @@ public class DbusClientExtendedIntegrationTest {
     }
 
     // this is a listener test with many changing properties using upower
-    @Test(enabled = true)
+    @Test(enabled = false)
     public void testPower() throws Exception {
         client.connectSystem();
 

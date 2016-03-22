@@ -9,6 +9,7 @@ import at.yawk.dbus.protocol.object.DbusObject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -46,6 +47,12 @@ class CollectingExecutor implements RequestExecutor {
     public Response execute(Request request) throws Exception {
         requests.add(request);
         return delegate.apply(request);
+    }
+
+    @Override
+    public Response execute(Request request, long timeout, TimeUnit unit) throws Exception {
+        // timeout is ignored in this test class
+        return execute(request);
     }
 
     @Override

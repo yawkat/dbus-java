@@ -14,6 +14,7 @@ import at.yawk.dbus.protocol.object.DbusObject;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
@@ -96,6 +97,11 @@ public class DbusClient implements Closeable {
         @Override
         public Response execute(Request request) throws Exception {
             return selectBus(request.getBus()).execute(request);
+        }
+
+        @Override
+        public Response execute(Request request, long timeout, TimeUnit unit) throws Exception {
+            return selectBus(request.getBus()).execute(request, timeout, unit);
         }
 
         @Override

@@ -24,6 +24,7 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
@@ -71,6 +72,9 @@ class CallSiteBuilder implements Request {
     StringObject memberObject;
     StringObject destinationObject;
 
+    int timeout = -1;
+    TimeUnit timeoutUnit;
+
     /**
      * @param childTransient If set to {@code true}, the returned call site will not be decorated from anything but
      *                       {@link #decorateFromCall(Object[])}.
@@ -98,6 +102,9 @@ class CallSiteBuilder implements Request {
         child.markedWithListener = markedWithListener;
         child.returnBinder = returnBinder;
         child.unwrapReturnVariant = unwrapReturnVariant;
+
+        child.timeout = timeout;
+        child.timeoutUnit = timeoutUnit;
         return child;
     }
 
@@ -223,6 +230,10 @@ class CallSiteBuilder implements Request {
                 decorateFromExceptionMapping(mapping);
             }
         });
+        ifPresent(element, Timeout.class, to -> {
+            this.timeout = to.value();
+            this.timeoutUnit = to.unit();
+        });
     }
 
     @SneakyThrows
@@ -260,7 +271,9 @@ class CallSiteBuilder implements Request {
             return null;
         } else {
             assert listener == null;
-            Response response = executor.execute(this);
+            Response response = timeout > 0 ?
+                    executor.execute(this, timeout, timeoutUnit) :
+                    executor.execute(this);
             for (ResponseValidator validator : responseValidators) {
                 validator.validate(response);
             }

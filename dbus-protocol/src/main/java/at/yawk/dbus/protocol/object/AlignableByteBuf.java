@@ -1,18 +1,23 @@
 package at.yawk.dbus.protocol.object;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.WrappedByteBuf;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+import lombok.experimental.Delegate;
 
 /**
  * @author yawkat
  */
-public class AlignableByteBuf extends WrappedByteBuf {
+@ToString
+@EqualsAndHashCode(callSuper = false)
+public class AlignableByteBuf extends ByteBuf {
+    @Delegate private final ByteBuf buf;
     private final int messageOffset;
     private final int baseAlignment;
 
     // visible for testing
     public AlignableByteBuf(ByteBuf buf, int messageOffset, int baseAlignment) {
-        super(buf);
+        this.buf = buf;
         this.messageOffset = messageOffset;
         this.baseAlignment = baseAlignment;
     }

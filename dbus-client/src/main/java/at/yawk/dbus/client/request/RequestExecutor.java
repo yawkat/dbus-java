@@ -4,6 +4,7 @@ import at.yawk.dbus.client.error.RemoteException;
 import at.yawk.dbus.protocol.MatchRule;
 import at.yawk.dbus.protocol.object.DbusObject;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
@@ -14,6 +15,11 @@ public interface RequestExecutor {
      * Execute a (blocking) request.
      */
     Response execute(Request request) throws Exception;
+
+    /**
+     * Execute a (blocking) request.
+     */
+    Response execute(Request request, long timeout, TimeUnit unit) throws Exception;
 
     /**
      * Add a listener for messages of the given rule.

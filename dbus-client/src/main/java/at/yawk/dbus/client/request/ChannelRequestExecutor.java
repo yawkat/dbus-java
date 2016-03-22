@@ -7,6 +7,7 @@ import at.yawk.dbus.protocol.object.StringObject;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 
@@ -28,8 +29,17 @@ public class ChannelRequestExecutor implements RequestExecutor {
 
     @Override
     public Response execute(Request request) throws Exception {
+        return executeLaterChecked(request).get();
+    }
+
+    @Override
+    public Response execute(Request request, long timeout, TimeUnit unit) throws Exception {
+        return executeLaterChecked(request).get(timeout, unit);
+    }
+
+    private CompletableFuture<Response> executeLaterChecked(Request request) {
         eventThreadWatcher.checkLock();
-        return executeLater(request).get();
+        return executeLater(request);
     }
 
     @Override

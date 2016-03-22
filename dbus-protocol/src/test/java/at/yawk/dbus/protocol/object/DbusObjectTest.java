@@ -56,7 +56,7 @@ public class DbusObjectTest {
     }
 
     private static void testSerialize(DbusObject object) {
-        for (int readerOffset = 0; readerOffset < 10; readerOffset++) {
+        for (int readerOffset = 9; readerOffset < 10; readerOffset++) {
             AlignableByteBuf buf = new AlignableByteBuf(Unpooled.buffer(), readerOffset, 8);
             object.serialize(buf);
             DbusObject des = object.getType().deserialize(buf);
