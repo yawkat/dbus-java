@@ -1,23 +1,24 @@
 package at.yawk.dbus.protocol.object;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.util.ReferenceCounted;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.ToString;
-import lombok.experimental.Delegate;
 
 /**
  * @author yawkat
  */
 @ToString
-@EqualsAndHashCode(callSuper = false)
-public class AlignableByteBuf extends ByteBuf {
-    @Delegate private final ByteBuf buf;
+@EqualsAndHashCode
+public class AlignableByteBuf implements ReferenceCounted {
+    @Getter private final ByteBuf buffer;
     private final int messageOffset;
     private final int baseAlignment;
 
     // visible for testing
-    public AlignableByteBuf(ByteBuf buf, int messageOffset, int baseAlignment) {
-        this.buf = buf;
+    public AlignableByteBuf(ByteBuf buffer, int messageOffset, int baseAlignment) {
+        this.buffer = buffer;
         this.messageOffset = messageOffset;
         this.baseAlignment = baseAlignment;
     }
@@ -65,15 +66,15 @@ public class AlignableByteBuf extends ByteBuf {
 
     public boolean canAlignRead(int alignment) {
         if (!canAlign(alignment)) { return false; }
-        int toPad = calculateAlignmentOffset(readerIndex(), alignment);
-        return readableBytes() >= toPad;
+        int toPad = calculateAlignmentOffset(getBuffer().readerIndex(), alignment);
+        return getBuffer().readableBytes() >= toPad;
     }
 
     public void alignRead(int alignment) {
         checkAlign(alignment);
-        int toPad = calculateAlignmentOffset(readerIndex(), alignment);
+        int toPad = calculateAlignmentOffset(getBuffer().readerIndex(), alignment);
         for (int i = 0; i < toPad; i++) {
-            if (readByte() != 0) {
+            if (getBuffer().readByte() != 0) {
                 throw new DeserializerException("Non-null byte in alignment padding");
             }
         }
@@ -81,15 +82,206 @@ public class AlignableByteBuf extends ByteBuf {
 
     public boolean canAlignWrite(int alignment) {
         if (!canAlign(alignment)) { return false; }
-        int toPad = calculateAlignmentOffset(writerIndex(), alignment);
-        return writableBytes() >= toPad;
+        int toPad = calculateAlignmentOffset(getBuffer().writerIndex(), alignment);
+        return getBuffer().writableBytes() >= toPad;
     }
 
     public void alignWrite(int alignment) {
         checkAlign(alignment);
-        int toPad = calculateAlignmentOffset(writerIndex(), alignment);
-        for (int i = 0; i < toPad; i++) {
-            writeByte(0);
-        }
+        int toPad = calculateAlignmentOffset(getBuffer().writerIndex(), alignment);
+        getBuffer().writeZero(toPad);
+    }
+
+    public boolean isReadable() {
+        return getBuffer().isReadable();
+    }
+
+    public boolean isReadable(int size) {
+        return getBuffer().isReadable(size);
+    }
+
+    public boolean isWritable() {
+        return getBuffer().isWritable();
+    }
+
+    public boolean isWritable(int size) {
+        return getBuffer().isWritable(size);
+    }
+
+    public int readableBytes() {
+        return getBuffer().readableBytes();
+    }
+
+    public int writableBytes() {
+        return getBuffer().writableBytes();
+    }
+
+    public int readerIndex() {
+        return getBuffer().readerIndex();
+    }
+
+    public AlignableByteBuf readerIndex(int readerIndex) {
+        getBuffer().readerIndex(readerIndex);
+        return this;
+    }
+
+    public int writerIndex() {
+        return getBuffer().writerIndex();
+    }
+
+    public AlignableByteBuf writerIndex(int writerIndex) {
+        getBuffer().writerIndex(writerIndex);
+        return this;
+    }
+
+    public int readInt() {
+        return getBuffer().readInt();
+    }
+
+    public int readUnsignedMedium() {
+        return getBuffer().readUnsignedMedium();
+    }
+
+    public int readMedium() {
+        return getBuffer().readMedium();
+    }
+
+    public int readUnsignedShort() {
+        return getBuffer().readUnsignedShort();
+    }
+
+    public short readShort() {
+        return getBuffer().readShort();
+    }
+
+    public byte readByte() {
+        return getBuffer().readByte();
+    }
+
+    public boolean readBoolean() {
+        return getBuffer().readBoolean();
+    }
+
+    public long readUnsignedInt() {
+        return getBuffer().readUnsignedInt();
+    }
+
+    public long readLong() {
+        return getBuffer().readLong();
+    }
+
+    public char readChar() {
+        return getBuffer().readChar();
+    }
+
+    public float readFloat() {
+        return getBuffer().readFloat();
+    }
+
+    public double readDouble() {
+        return getBuffer().readDouble();
+    }
+
+    public ByteBuf readBytes(int length) {
+        return getBuffer().readBytes(length);
+    }
+
+    public AlignableByteBuf readBytes(byte[] dst) {
+        getBuffer().readBytes(dst);
+        return this;
+    }
+
+    public AlignableByteBuf writeBoolean(boolean value) {
+        getBuffer().writeBoolean(value);
+        return this;
+    }
+
+    public AlignableByteBuf writeByte(int value) {
+        getBuffer().writeByte(value);
+        return this;
+    }
+
+    public AlignableByteBuf writeShort(int value) {
+        getBuffer().writeShort(value);
+        return this;
+    }
+
+    public AlignableByteBuf writeMedium(int value) {
+        getBuffer().writeMedium(value);
+        return this;
+    }
+
+    public AlignableByteBuf writeInt(int value) {
+        getBuffer().writeInt(value);
+        return this;
+    }
+
+    public AlignableByteBuf writeLong(long value) {
+        getBuffer().writeLong(value);
+        return this;
+    }
+
+    public AlignableByteBuf writeChar(int value) {
+        getBuffer().writeChar(value);
+        return this;
+    }
+
+    public AlignableByteBuf writeFloat(float value) {
+        getBuffer().writeFloat(value);
+        return this;
+    }
+
+    public AlignableByteBuf writeDouble(double value) {
+        getBuffer().writeDouble(value);
+        return this;
+    }
+
+    public AlignableByteBuf writeBytes(ByteBuf src) {
+        getBuffer().writeBytes(src);
+        return this;
+    }
+
+    public AlignableByteBuf writeBytes(byte[] src) {
+        getBuffer().writeBytes(src);
+        return this;
+    }
+
+    @Override
+    public int refCnt() {
+        return getBuffer().refCnt();
+    }
+
+    @Override
+    public ReferenceCounted retain() {
+        getBuffer().retain();
+        return this;
+    }
+
+    @Override
+    public ReferenceCounted retain(int increment) {
+        getBuffer().retain(increment);
+        return this;
+    }
+
+    @Override
+    public ReferenceCounted touch() {
+        getBuffer().touch();
+        return this;
+    }
+
+    @Override
+    public ReferenceCounted touch(Object hint) {
+        getBuffer().touch(hint);
+        return this;
+    }
+
+    @Override
+    public boolean release() {
+        return getBuffer().release();
+    }
+
+    @Override
+    public boolean release(int decrement) {
+        return getBuffer().release(decrement);
     }
 }

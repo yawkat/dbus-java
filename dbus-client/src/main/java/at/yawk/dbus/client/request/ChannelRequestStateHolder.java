@@ -20,7 +20,7 @@ class ChannelRequestStateHolder<T> {
     /**
      * Close all pending futures and make this state holder invalid.
      */
-    synchronized void onHangup() {
+    private synchronized void onHangup() {
         if (running) {
             running = false;
             pendingFutures.forEach((k, v) -> v.completeExceptionally(new EOFException()));

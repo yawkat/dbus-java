@@ -178,7 +178,7 @@ public abstract class BasicObject implements DbusObject {
             @Override
             public void serialize(AlignableByteBuf buf) {
                 buf.alignWrite(8);
-                buf.writeDouble(value);
+                buf.getBuffer().writeDouble(value);
             }
 
             @Override

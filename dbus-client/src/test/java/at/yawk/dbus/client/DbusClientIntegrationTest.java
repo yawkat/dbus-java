@@ -26,10 +26,9 @@ public class DbusClientIntegrationTest {
         client.close();
     }
 
-    @Test(timeOut = 5000L) // timeout for netty issues
+    @Test//(timeOut = 5000L) // timeout for netty issues
     public void test() throws Exception {
         client.connectSystem();
-        client.connectSession();
 
         TestItf itf = client.implement(TestItf.class);
 
@@ -39,6 +38,7 @@ public class DbusClientIntegrationTest {
         System.out.println(systemNames);
         Assert.assertTrue(systemNames.size() > 3);
 
+        client.connectSession();
         List<String> sessionNames = itf.listNamesSession();
         System.out.println(sessionNames);
         Assert.assertTrue(sessionNames.size() > 3);

@@ -1,5 +1,6 @@
 package at.yawk.dbus.protocol;
 
+import io.netty.buffer.ByteBuf;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -35,6 +36,12 @@ public class DbusUtil {
      */
     public static String printHex(byte[] bytes) {
         return DatatypeConverter.printHexBinary(bytes).toLowerCase();
+    }
+
+    public static String printHex(ByteBuf buf) {
+        byte[] bytes = new byte[buf.readableBytes()];
+        buf.getBytes(buf.readerIndex(), bytes);
+        return printHex(bytes);
     }
 
     /**

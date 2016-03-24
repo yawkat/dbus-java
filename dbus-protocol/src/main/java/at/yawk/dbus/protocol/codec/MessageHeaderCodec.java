@@ -105,7 +105,9 @@ class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
             ByteBuf slice = rawBuf.slice().order(byteOrder);
             slice.writerIndex(slice.readerIndex() + toRead);
             slice.retain();
-            out.add(AlignableByteBuf.decoding(slice));
+            AlignableByteBuf decoding = AlignableByteBuf.decoding(slice);
+            log.trace("INBOUND {}", decoding);
+            out.add(decoding);
 
             rawBuf.readerIndex(rawBuf.readerIndex() + toRead);
             toRead = 0;
@@ -130,7 +132,7 @@ class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
         AlignableByteBuf buf = AlignableByteBuf.decoding(
                 rawBuf.resetReaderIndex().order(order));
 
-        buf.markReaderIndex();
+        buf.getBuffer().markReaderIndex();
         buf.readByte(); // skip endianness byte we read above
 
         @Nullable MessageType type = MessageType.byId(buf.readByte());
@@ -156,7 +158,7 @@ class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
         ArrayObject headers = (ArrayObject) tryDecode(HEADER_FIELD_LIST_TYPE, buf);
         if (headers == null) {
             // not enough data
-            buf.resetReaderIndex();
+            buf.getBuffer().resetReaderIndex();
             return;
         }
         for (DbusObject struct : headers.getValues()) {
@@ -178,7 +180,7 @@ class MessageHeaderCodec extends ByteToMessageCodec<MessageHeader> {
         }
 
         if (!buf.canAlignRead(8)) {
-            buf.resetReaderIndex();
+            buf.getBuffer().resetReaderIndex();
             return;
         }
         buf.alignRead(8);

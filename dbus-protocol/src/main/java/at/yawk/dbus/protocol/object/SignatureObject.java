@@ -47,7 +47,7 @@ public class SignatureObject extends BasicObject {
 
     static String readSignatureString(AlignableByteBuf buf) {
         byte len = buf.readByte();
-        String def = buf.toString(buf.readerIndex(), len, StandardCharsets.US_ASCII);
+        String def = buf.getBuffer().toString(buf.readerIndex(), len, StandardCharsets.US_ASCII);
         buf.readerIndex(buf.readerIndex() + len);
         if (buf.readByte() != '\0') {
             throw new DeserializerException("Signature not followed by NUL byte");

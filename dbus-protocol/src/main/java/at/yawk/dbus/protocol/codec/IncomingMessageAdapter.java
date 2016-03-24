@@ -42,6 +42,8 @@ class IncomingMessageAdapter extends SimpleChannelInboundHandler<Object> {
                 consumer.accept(message);
                 headerAttribute.set(null);
             }
+        } else {
+            log.warn("Did not handle {}", msg);
         }
     }
 

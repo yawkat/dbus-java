@@ -67,12 +67,12 @@ public abstract class ArrayObject implements DbusObject {
 
     @Override
     public void serialize(AlignableByteBuf buf) {
-        ByteBuf tempBuffer = serializeValues(ArrayObject.allocateBufferForWrite(buf));
+        ByteBuf tempBuffer = serializeValues(ArrayObject.allocateBufferForWrite(buf.getBuffer()));
 
         buf.alignWrite(4);
-        buf.writeInt(tempBuffer.writerIndex());
+        buf.getBuffer().writeInt(tempBuffer.writerIndex());
         if (tempBuffer.isReadable()) {
-            buf.writeBytes(tempBuffer);
+            buf.getBuffer().writeBytes(tempBuffer);
         }
         tempBuffer.release();
     }
@@ -88,6 +88,10 @@ public abstract class ArrayObject implements DbusObject {
      */
     static ByteBuf allocateBufferForWrite(ByteBuf writeTarget) {
         return writeTarget.alloc().buffer().order(writeTarget.order());
+    }
+
+    static ByteBuf allocateBufferForWrite(AlignableByteBuf writeTarget) {
+        return allocateBufferForWrite(writeTarget.getBuffer());
     }
 
     @ToString(callSuper = true)
@@ -106,7 +110,7 @@ public abstract class ArrayObject implements DbusObject {
                 // we align to the 8-byte-mark later so we don't need to pass anything but 0
                 value.serialize(tempBuffer);
             }
-            return tempBuffer;
+            return tempBuffer.getBuffer();
         }
 
         @Override
