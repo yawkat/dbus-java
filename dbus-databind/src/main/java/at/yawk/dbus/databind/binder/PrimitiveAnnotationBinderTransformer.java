@@ -46,6 +46,15 @@ public class PrimitiveAnnotationBinderTransformer implements AnnotationBinderTra
      * @return The wrapped binder.
      */
     public static Binder<?> transformBinder(Binder<?> binder, BasicType outerType) {
+        if (outerType == BasicType.VARIANT) {
+            return wrap(
+                    binder,
+                    outerType,
+                    DbusObject::getValue,
+                    VariantObject::create
+            );
+        }
+
         BasicType innerType = (BasicType) binder.getType();
 
         if (innerType == outerType) { return binder; }
@@ -69,15 +78,6 @@ public class PrimitiveAnnotationBinderTransformer implements AnnotationBinderTra
                     outerType,
                     o -> innerFactory.apply(o.stringValue()),
                     o -> outerFactory.apply(o.stringValue())
-            );
-        }
-
-        if (outerType == BasicType.VARIANT) {
-            return wrap(
-                    binder,
-                    outerType,
-                    DbusObject::getValue,
-                    VariantObject::create
             );
         }
 

@@ -2,6 +2,7 @@ package at.yawk.dbus.databind.binder;
 
 import at.yawk.dbus.protocol.object.BasicObject;
 import at.yawk.dbus.protocol.object.DbusObject;
+import at.yawk.dbus.protocol.object.VariantObject;
 import at.yawk.dbus.protocol.type.BasicType;
 import at.yawk.dbus.protocol.type.TypeDefinition;
 import java.lang.reflect.Type;
@@ -38,6 +39,8 @@ public class PrimitiveBinderFactory implements BinderFactory {
                 BasicType.DOUBLE, obj -> (float) obj.doubleValue(), BasicObject::createDouble);
         Binder<Double> doubleBinder = Binder.of(
                 BasicType.DOUBLE, DbusObject::doubleValue, BasicObject::createDouble);
+        Binder<DbusObject> variantBinder = Binder.of(
+                BasicType.VARIANT, DbusObject::getValue, VariantObject::create);
 
         typeBinders.put(String.class, stringBinder);
         typeBinders.put(boolean.class, booleanBinder);
@@ -54,6 +57,7 @@ public class PrimitiveBinderFactory implements BinderFactory {
         typeBinders.put(Float.class, floatBinder);
         typeBinders.put(double.class, doubleBinder);
         typeBinders.put(Double.class, doubleBinder);
+        typeBinders.put(DbusObject.class, variantBinder);
 
         for (Binder<?> binder : new Binder[]{
                 stringBinder,

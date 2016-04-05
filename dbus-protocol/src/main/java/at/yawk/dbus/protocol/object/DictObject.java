@@ -38,7 +38,7 @@ public class DictObject implements DbusObject {
 
     public static DictObject deserialize(DictTypeDefinition type, AlignableByteBuf buf) {
         Map<DbusObject, DbusObject> values = new HashMap<>();
-        buf.alignRead(8);
+        buf.alignRead(4);
         int bytes = Math.toIntExact(buf.readUnsignedInt());
         if (bytes > 0) {
             buf.alignRead(8);
@@ -63,7 +63,7 @@ public class DictObject implements DbusObject {
             v.serialize(tempBuffer);
         });
 
-        buf.alignWrite(8);
+        buf.alignWrite(4);
         buf.writeInt(tempBuffer.writerIndex());
         if (tempBuffer.isReadable()) {
             buf.alignWrite(8);
