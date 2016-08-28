@@ -117,11 +117,14 @@ public class DbusConnector {
     }
 
     public DbusChannel connectSession() throws Exception {
-        String machineId = new String(Files.readAllBytes(Paths.get("/etc/machine-id"))).trim();
-        String response = DbusUtil.callCommand("dbus-launch", "--autolaunch", machineId);
-        Properties properties = new Properties();
-        properties.load(new StringReader(response));
-        String address = properties.getProperty("DBUS_SESSION_BUS_ADDRESS");
+        String address = System.getenv("DBUS_SESSION_BUS_ADDRESS");
+        if (address == null) {
+            String machineId = new String(Files.readAllBytes(Paths.get("/etc/machine-id"))).trim();
+            String response = DbusUtil.callCommand("dbus-launch", "--autolaunch", machineId);
+            Properties properties = new Properties();
+            properties.load(new StringReader(response));
+            address = properties.getProperty("DBUS_SESSION_BUS_ADDRESS");
+        }
         return connect(DbusAddress.parse(address));
     }
 
