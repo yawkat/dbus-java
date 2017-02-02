@@ -14,12 +14,12 @@
         <module>dbus-client</module>
     </modules>
 
-    <repositories>
-        <repository>
-            <id>yawkat</id>
-            <url>http://mvn.yawk.at</url>
-        </repository>
-    </repositories>
+    <licenses>
+        <license>
+            <name>MPL 2.0</name>
+            <url>https://www.mozilla.org/en-US/MPL/2.0/</url>
+        </license>
+    </licenses>
 
     <properties>
         <netty.version>5.0.0.Alpha3-SNAPSHOT</netty.version>
@@ -29,6 +29,31 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
+
+    <developers>
+        <developer>
+            <name>Jonas Konrad</name>
+            <url>http://yawk.at</url>
+        </developer>
+    </developers>
+
+    <scm>
+        <url>https://github.com/yawkat/dbus-java</url>
+        <connection>scm:git:git://github.com/yawkat/dbus-java.git</connection>
+        <developerConnection>scm:git:ssh://github.com/yawkat/dbus-java.git</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
 
     <dependencies>
         <dependency>
@@ -69,4 +94,29 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>2.2.1</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>2.9.1</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>1.5</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>2.5.3</version>
+            </plugin>
+        </plugins>
+    </build>
 </project>
