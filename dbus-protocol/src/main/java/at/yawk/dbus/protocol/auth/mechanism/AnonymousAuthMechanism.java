@@ -1,3 +1,9 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
 package at.yawk.dbus.protocol.auth.mechanism;
 
 import at.yawk.dbus.protocol.auth.AuthChannel;
@@ -5,7 +11,6 @@ import at.yawk.dbus.protocol.auth.UnexpectedCommandException;
 import at.yawk.dbus.protocol.auth.command.Auth;
 import at.yawk.dbus.protocol.auth.command.Begin;
 import at.yawk.dbus.protocol.auth.command.Ok;
-import at.yawk.dbus.protocol.auth.command.Rejected;
 import java.util.concurrent.CompletionStage;
 
 /**
