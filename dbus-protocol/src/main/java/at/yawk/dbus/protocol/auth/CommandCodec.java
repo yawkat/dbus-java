@@ -6,19 +6,31 @@
 
 package at.yawk.dbus.protocol.auth;
 
-import at.yawk.dbus.protocol.auth.command.*;
+import at.yawk.dbus.protocol.auth.command.AgreeUnixFd;
+import at.yawk.dbus.protocol.auth.command.Auth;
+import at.yawk.dbus.protocol.auth.command.Begin;
+import at.yawk.dbus.protocol.auth.command.Cancel;
+import at.yawk.dbus.protocol.auth.command.Command;
+import at.yawk.dbus.protocol.auth.command.Data;
 import at.yawk.dbus.protocol.auth.command.Error;
+import at.yawk.dbus.protocol.auth.command.NegotiateUnixFd;
+import at.yawk.dbus.protocol.auth.command.Ok;
+import at.yawk.dbus.protocol.auth.command.Rejected;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufProcessor;
-import io.netty.channel.ChannelHandlerAdapter;
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.MessageToByteEncoder;
+import io.netty.util.ByteProcessor;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
 
@@ -26,7 +38,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author yawkat
  */
 @Slf4j
-public class CommandCodec extends ChannelHandlerAdapter {
+public class CommandCodec extends ChannelDuplexHandler {
     /*
      * This is a custom ChannelHandlerAdapter instead of a ByteToMessageCodec since ByteToMessageCodec has a bug
      * (https://github.com/netty/netty/issues/4087) where it will discard data on removal from pipeline.
@@ -113,7 +125,7 @@ public class CommandCodec extends ChannelHandlerAdapter {
         decoder.handlerRemoved(ctx);
     }
 
-    private static class CRLFFinder implements ByteBufProcessor {
+    private static class CRLFFinder implements ByteProcessor {
         boolean hasCr = false;
 
         @Override

@@ -26,7 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 class BodyDecoder extends MessageToMessageDecoder<AlignableByteBuf> {
     @Override
     protected void decode(ChannelHandlerContext ctx, AlignableByteBuf in, List<Object> out) throws Exception {
-        MessageHeader header = ctx.attr(Local.CURRENT_HEADER).get();
+        MessageHeader header = ctx.channel().attr(Local.CURRENT_HEADER).get();
         if (header == null) {
             // message should be skipped
             return;

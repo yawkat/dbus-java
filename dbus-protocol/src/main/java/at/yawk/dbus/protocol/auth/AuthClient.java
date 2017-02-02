@@ -35,7 +35,7 @@ public class AuthClient extends ChannelHandlerAdapter {
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
         for (ChannelHandler handler : handlers) {
-            ctx.pipeline().addBefore(ctx.invoker(), ctx.name(), null, handler);
+            ctx.pipeline().addBefore(ctx.executor(), ctx.name(), null, handler);
         }
         super.handlerAdded(ctx);
     }

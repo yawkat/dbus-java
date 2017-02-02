@@ -25,8 +25,8 @@ class IncomingMessageAdapter extends SimpleChannelInboundHandler<Object> {
     private final MessageConsumer consumer;
 
     @Override
-    protected void messageReceived(ChannelHandlerContext ctx, Object msg) throws Exception {
-        Attribute<MessageHeader> headerAttribute = ctx.attr(Local.CURRENT_HEADER);
+    protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
+        Attribute<MessageHeader> headerAttribute = ctx.channel().attr(Local.CURRENT_HEADER);
         if (msg instanceof MessageHeader) {
             if (((MessageHeader) msg).getMessageBodyLength() == 0) {
                 DbusMessage message = new DbusMessage();

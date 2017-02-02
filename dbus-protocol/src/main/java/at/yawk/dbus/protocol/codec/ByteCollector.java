@@ -7,7 +7,7 @@
 package at.yawk.dbus.protocol.codec;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerAdapter;
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +16,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author yawkat
  */
 @Slf4j
-class ByteCollector extends ChannelHandlerAdapter {
+class ByteCollector extends ChannelDuplexHandler {
     private ByteBuf buffer = null;
 
     @Override

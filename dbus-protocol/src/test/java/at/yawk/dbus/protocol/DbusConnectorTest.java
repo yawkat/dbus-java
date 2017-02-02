@@ -15,9 +15,9 @@ import at.yawk.dbus.protocol.codec.DbusMainProtocol;
 import at.yawk.dbus.protocol.object.BasicObject;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollServerDomainSocketChannel;
 import io.netty.channel.unix.DomainSocketAddress;
@@ -60,9 +60,9 @@ public class DbusConnectorTest {
             @Override
             protected void initChannel(Channel ch) throws Exception {
 
-                ch.pipeline().addLast(new CommandCodec()).addLast(new SimpleChannelInboundHandler() {
+                ch.pipeline().addLast(new CommandCodec()).addLast(new ChannelDuplexHandler() {
                     @Override
-                    protected void messageReceived(ChannelHandlerContext ctx, Object msg) throws Exception {
+                    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
                         if (msg instanceof NegotiateUnixFd) {
                             ch.writeAndFlush(new Error("error"));
                         }

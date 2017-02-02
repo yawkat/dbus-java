@@ -21,7 +21,7 @@ public class NettyBootSpeedTest {
         Bootstrap bootstrap = new Bootstrap();
         bootstrap.channel(NioSocketChannel.class);
         bootstrap.group(new NioEventLoopGroup());
-        bootstrap.handler(new ChannelHandlerAdapter());
+        bootstrap.handler(new ChannelHandlerAdapter() {});
 
         long mid = System.currentTimeMillis();
 

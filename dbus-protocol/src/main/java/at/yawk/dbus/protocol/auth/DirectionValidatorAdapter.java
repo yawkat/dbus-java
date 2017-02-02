@@ -8,7 +8,7 @@ package at.yawk.dbus.protocol.auth;
 
 import at.yawk.dbus.protocol.auth.command.AuthDirection;
 import at.yawk.dbus.protocol.auth.command.Command;
-import io.netty.channel.ChannelHandlerAdapter;
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.DecoderException;
@@ -18,7 +18,7 @@ import lombok.RequiredArgsConstructor;
  * @author yawkat
  */
 @RequiredArgsConstructor
-class DirectionValidatorAdapter extends ChannelHandlerAdapter {
+class DirectionValidatorAdapter extends ChannelDuplexHandler {
     private final AuthDirection inbound;
     private final AuthDirection outbound;
 

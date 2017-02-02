@@ -7,20 +7,35 @@
 package at.yawk.dbus.protocol.codec;
 
 import at.yawk.dbus.protocol.MessageConsumer;
-import io.netty.channel.ChannelHandlerAppender;
+import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
 
 /**
  * @author yawkat
  */
-public class DbusMainProtocol extends ChannelHandlerAppender {
+public class DbusMainProtocol extends ChannelDuplexHandler {
+    private final MessageConsumer consumer;
+
     public DbusMainProtocol(MessageConsumer consumer) {
-        add(new ByteCollector());
+        this.consumer = consumer;
+    }
 
-        add(new MessageHeaderCodec());
+    @Override
+    public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+        add(ctx, new ByteCollector());
 
-        add(new BodyDecoder());
-        add(new BodyEncoder());
+        add(ctx, new MessageHeaderCodec());
 
-        add(new IncomingMessageAdapter(consumer));
+        add(ctx, new BodyDecoder());
+        add(ctx, new BodyEncoder());
+
+        add(ctx, new IncomingMessageAdapter(consumer));
+
+        ctx.pipeline().remove(this);
+    }
+
+    private void add(ChannelHandlerContext ctx, ChannelHandler handler) {
+        ctx.pipeline().addBefore(ctx.executor(), ctx.name(), null, handler);
     }
 }

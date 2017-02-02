@@ -7,7 +7,7 @@
 package at.yawk.dbus.protocol;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerAdapter;
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import java.nio.ByteBuffer;
@@ -19,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author yawkat
  */
 @Slf4j
-class LoggingInboundAdapter extends ChannelHandlerAdapter {
+class LoggingInboundAdapter extends ChannelDuplexHandler {
     static boolean isEnabled() {
         return log.isTraceEnabled();
     }

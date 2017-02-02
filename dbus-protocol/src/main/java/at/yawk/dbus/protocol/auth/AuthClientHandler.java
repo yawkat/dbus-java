@@ -34,7 +34,7 @@ class AuthClientHandler extends SimpleChannelInboundHandler<Command> {
     }
 
     @Override
-    protected void messageReceived(ChannelHandlerContext ctx, Command msg) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, Command msg) throws Exception {
         // may be modified in .complete
         CompletableFuture<Command> future = currentCommandFuture;
         if (future == null) { throw new UnexpectedCommandException(msg); }
