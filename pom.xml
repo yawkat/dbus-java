@@ -40,7 +40,7 @@
     <scm>
         <url>https://github.com/yawkat/dbus-java</url>
         <connection>scm:git:git://github.com/yawkat/dbus-java.git</connection>
-        <developerConnection>scm:git:ssh://github.com/yawkat/dbus-java.git</developerConnection>
+        <developerConnection>scm:git:ssh://git@github.com/yawkat/dbus-java.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
 
