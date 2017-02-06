@@ -35,6 +35,10 @@
         </developer>
     </developers>
 
+    <name>${project.groupId}:${project.artifactId}</name>
+    <description>Pure java DBus protocol implementation</description>
+    <url>https://github.com/yawkat/dbus-java</url>
+
     <scm>
         <url>https://github.com/yawkat/dbus-java</url>
         <connection>scm:git:git://github.com/yawkat/dbus-java.git</connection>
