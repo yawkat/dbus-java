@@ -16,4 +16,6 @@ import java.lang.annotation.Target;
  */
 @Target({ ElementType.TYPE, ElementType.METHOD })
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Listener {}
+public @interface Listener {
+    boolean eavesdrop() default false;
+}

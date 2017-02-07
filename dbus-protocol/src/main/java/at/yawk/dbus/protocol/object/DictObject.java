@@ -49,8 +49,11 @@ public class DictObject implements DbusObject {
         if (bytes > 0) {
             buf.alignRead(8);
             int start = buf.readerIndex();
-            while (start + bytes > buf.readerIndex()) {
+            int end = start + bytes;
+            while (buf.readerIndex() < end) {
+                if (!buf.canAlignRead(8)) break;
                 buf.alignRead(8);
+                if (buf.readerIndex() >= end) break;
                 DbusObject key = type.getKeyType().deserialize(buf);
                 DbusObject value = type.getValueType().deserialize(buf);
                 values.put(key, value);

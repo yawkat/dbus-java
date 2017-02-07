@@ -6,7 +6,20 @@
 
 package at.yawk.dbus.client;
 
-import at.yawk.dbus.client.annotation.*;
+import at.yawk.dbus.client.annotation.Bus;
+import at.yawk.dbus.client.annotation.Call;
+import at.yawk.dbus.client.annotation.Destination;
+import at.yawk.dbus.client.annotation.ExceptionMapping;
+import at.yawk.dbus.client.annotation.GetProperty;
+import at.yawk.dbus.client.annotation.Interface;
+import at.yawk.dbus.client.annotation.Listener;
+import at.yawk.dbus.client.annotation.Member;
+import at.yawk.dbus.client.annotation.ObjectPath;
+import at.yawk.dbus.client.annotation.SessionBus;
+import at.yawk.dbus.client.annotation.Signal;
+import at.yawk.dbus.client.annotation.SubInterface;
+import at.yawk.dbus.client.annotation.SystemBus;
+import at.yawk.dbus.client.annotation.Timeout;
 import at.yawk.dbus.client.error.PatternResponseValidator;
 import at.yawk.dbus.client.error.ResponseValidator;
 import at.yawk.dbus.client.request.Request;
@@ -25,7 +38,10 @@ import at.yawk.dbus.protocol.object.StringObject;
 import at.yawk.dbus.protocol.type.BasicType;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
+import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -63,6 +79,7 @@ class CallSiteBuilder implements Request {
     List<ResponseValidator> responseValidators = new ArrayList<>();
 
     boolean markedWithListener;
+    boolean eavesdrop;
     Consumer<List<DbusObject>> listener;
 
     // todo: properly support array returns
@@ -106,6 +123,7 @@ class CallSiteBuilder implements Request {
         child.responseValidators = childTransient ? responseValidators : new ArrayList<>(responseValidators);
         child.arguments = new ArrayList<>(arguments);
         child.markedWithListener = markedWithListener;
+        child.eavesdrop = eavesdrop;
         child.returnBinder = returnBinder;
         child.unwrapReturnVariant = unwrapReturnVariant;
 
@@ -121,7 +139,9 @@ class CallSiteBuilder implements Request {
 
     @Override
     public ObjectPathObject getObjectPath() {
-        if (objectPathObject == null) { objectPathObject = ObjectPathObject.create(objectPath); }
+        if (objectPathObject == null && objectPath != null) {
+            objectPathObject = ObjectPathObject.create(objectPath);
+        }
         return objectPathObject;
     }
 
@@ -175,6 +195,47 @@ class CallSiteBuilder implements Request {
                 });
                 returnBinder = dataBinder.getBinder(
                         TypeUtil.getTypeVariable(listenerParameter, Consumer.class, "T"));
+            } else if (raw.isInterface()) {
+                // find the non-default non-static method
+                Method targetMethod = null;
+                for (Method m : raw.getMethods()) {
+                    if (m.isSynthetic()) continue;
+                    if (Modifier.isStatic(m.getModifiers())) continue;
+                    if (m.isDefault()) continue;
+
+                    if (targetMethod != null) {
+                        throw new IllegalArgumentException(
+                                "Listener type " + raw.getName() + " is not a functional interface");
+                    }
+                    targetMethod = m;
+                }
+                if (targetMethod == null) {
+                    throw new IllegalArgumentException(
+                            "Listener type " + raw.getName() + " is not a functional interface");
+                }
+                // build parameter binders
+                List<Binder<?>> binders = new ArrayList<>();
+                for (AnnotatedType parameterType : targetMethod.getAnnotatedParameterTypes()) {
+                    binders.add(dataBinder.getBinder(parameterType.getType(), parameterType));
+                }
+                Method finalTargetMethod = targetMethod;
+                actions.add((site, args) -> {
+                    Object listener = args[listenerParameterIndex];
+                    site.listener = l -> {
+                        // happens sometimes for some reason
+                        if (l.isEmpty() && !binders.isEmpty()) return;
+
+                        Object[] parameters = new Object[binders.size()];
+                        for (int i = 0; i < parameters.length; i++) {
+                            parameters[i] = binders.get(i).decode(l.get(i));
+                        }
+                        try {
+                            finalTargetMethod.invoke(listener, parameters);
+                        } catch (IllegalAccessException | InvocationTargetException e) {
+                            throw new RuntimeException(e);
+                        }
+                    };
+                });
             } else {
                 throw new IllegalArgumentException("Unsupported listener type " + raw.getName());
             }
@@ -205,6 +266,7 @@ class CallSiteBuilder implements Request {
     private void decorateFromAnnotations(AnnotatedElement element) {
         ifPresent(element, Listener.class, a -> {
             markedWithListener = true;
+            eavesdrop = a.eavesdrop();
             if (messageType == null) {
                 messageType = MessageType.SIGNAL;
             }
@@ -269,10 +331,11 @@ class CallSiteBuilder implements Request {
             MatchRule rule = new MatchRule();
             rule.setMessageType(getType());
             rule.setPath(getObjectPath());
-            rule.setInterfaceName(interfaceName);
+            if (interfaceName != null) rule.setInterfaceName(interfaceName);
             // this breaks some listens and shouldn't really be used anyway
             //rule.setDestination(destination);
-            rule.setMember(member);
+            if (member != null) rule.setMember(member);
+            rule.setEavesdrop(eavesdrop);
             executor.listen(bus, rule, listener);
             return null;
         } else {
