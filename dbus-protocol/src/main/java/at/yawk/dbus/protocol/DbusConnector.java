@@ -19,6 +19,8 @@ import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.channel.unix.DomainSocketAddress;
+import java.io.Closeable;
+import java.io.IOException;
 import java.io.StringReader;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -33,7 +35,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author yawkat
  */
 @Slf4j
-public class DbusConnector {
+public class DbusConnector implements Closeable {
     private final Bootstrap bootstrap;
     /**
      * The consumer to use for initial messages.
@@ -41,6 +43,9 @@ public class DbusConnector {
     @Setter private MessageConsumer initialConsumer = MessageConsumer.DISCARD;
     @Setter private AuthMechanism authMechanism;
 
+    private EpollEventLoopGroup epollEventLoopGroup = null;
+    private NioEventLoopGroup nioEventLoopGroup = null;
+    
     public DbusConnector() {
         bootstrap = new Bootstrap();
         bootstrap.handler(new ChannelInitializer<Channel>() {
@@ -56,12 +61,21 @@ public class DbusConnector {
      */
     public DbusChannel connect(SocketAddress address) throws Exception {
         Bootstrap localBootstrap = bootstrap.clone();
-        if (address instanceof DomainSocketAddress) {
-            localBootstrap.group(new EpollEventLoopGroup());
-            localBootstrap.channelFactory(EpollDomainSocketChannel::new);
-        } else {
-            localBootstrap.group(new NioEventLoopGroup());
-            localBootstrap.channelFactory(NioSocketChannel::new);
+
+        synchronized (bootstrap) {
+            if (address instanceof DomainSocketAddress) {
+                if(epollEventLoopGroup == null) {
+                    epollEventLoopGroup = new EpollEventLoopGroup();
+                }
+                localBootstrap.group(epollEventLoopGroup);
+                localBootstrap.channelFactory(EpollDomainSocketChannel::new);
+            } else {
+                if(nioEventLoopGroup == null) {
+                    nioEventLoopGroup = new NioEventLoopGroup();
+                }
+                localBootstrap.group(nioEventLoopGroup);
+                localBootstrap.channelFactory(NioSocketChannel::new);
+            }
         }
 
         Channel channel = localBootstrap.connect(address).sync().channel();
@@ -137,5 +151,15 @@ public class DbusConnector {
     public DbusChannel connectSystem() throws Exception {
         // this is the default system socket location defined in dbus
         return connect(DbusAddress.fromUnixSocket(Paths.get("/run/dbus/system_bus_socket")));
+    }
+
+    @Override
+    public void close() throws IOException {
+        if(epollEventLoopGroup != null) {
+            epollEventLoopGroup.shutdownGracefully();
+        }
+        if(nioEventLoopGroup != null) {
+            nioEventLoopGroup.shutdownGracefully();
+        }
     }
 }

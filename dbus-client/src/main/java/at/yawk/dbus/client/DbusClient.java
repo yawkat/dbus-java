@@ -95,6 +95,7 @@ public class DbusClient implements Closeable {
         } finally {
             busMapLock.writeLock().unlock();
         }
+        getConnector().close();
     }
 
     @Value
