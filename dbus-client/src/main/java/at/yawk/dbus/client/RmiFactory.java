@@ -48,7 +48,13 @@ public class RmiFactory {
 
     @SuppressWarnings("unchecked")
     public <I> I createRmiInstance(Class<I> type) {
+        return createRmiInstance(type, null);
+    }
+    
+    @SuppressWarnings("unchecked")
+    public <I> I createRmiInstance(Class<I> type, final DBUSDestination destination) {
         CallSiteBuilder classSite = baseSite.createChild(false);
+        
         classSite.decorateFromClass(type);
         log.trace("Class call site for {} is {}", classSite, classSite);
 
@@ -73,6 +79,17 @@ public class RmiFactory {
 
             site = site.createChild(true);
             site.decorateFromCall(args);
+
+            if(destination != null && destination.getBus() != null) {
+                site.bus = destination.getBus();
+            }
+            if(destination != null && destination.getDestination() != null) {
+                site.destination = destination.getDestination();
+            }
+            if(destination != null && destination.getObjectPath() != null) {
+                site.objectPath = destination.getObjectPath();
+            }
+            
             return site.submit(executor);
         };
 

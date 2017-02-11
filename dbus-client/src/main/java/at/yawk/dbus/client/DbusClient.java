@@ -78,7 +78,11 @@ public class DbusClient implements Closeable {
     }
 
     public <I> I implement(Class<I> interfaceClass) {
-        return rootFactory.createRmiInstance(interfaceClass);
+        return rootFactory.createRmiInstance(interfaceClass, null);
+    }
+    
+    public <I> I implement(Class<I> interfaceClass, DBUSDestination destination) {
+        return rootFactory.createRmiInstance(interfaceClass, destination);
     }
 
     @Override
