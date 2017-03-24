@@ -26,6 +26,7 @@ import at.yawk.dbus.client.request.Request;
 import at.yawk.dbus.client.request.RequestExecutor;
 import at.yawk.dbus.client.request.Response;
 import at.yawk.dbus.databind.DataBinder;
+import at.yawk.dbus.databind.annotation.Struct;
 import at.yawk.dbus.databind.binder.Binder;
 import at.yawk.dbus.databind.binder.PrimitiveAnnotationBinderTransformer;
 import at.yawk.dbus.databind.binder.TypeUtil;
@@ -35,7 +36,9 @@ import at.yawk.dbus.protocol.object.BasicObject;
 import at.yawk.dbus.protocol.object.DbusObject;
 import at.yawk.dbus.protocol.object.ObjectPathObject;
 import at.yawk.dbus.protocol.object.StringObject;
+import at.yawk.dbus.protocol.object.StructObject;
 import at.yawk.dbus.protocol.type.BasicType;
+import at.yawk.dbus.protocol.type.StructTypeDefinition;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
@@ -49,6 +52,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -98,6 +102,8 @@ class CallSiteBuilder implements Request {
     int timeout = -1;
     TimeUnit timeoutUnit;
 
+    private Class returnClass;
+    
     /**
      * @param childTransient If set to {@code true}, the returned call site will not be decorated from anything but
      *                       {@link #decorateFromCall(Object[])}.
@@ -129,6 +135,7 @@ class CallSiteBuilder implements Request {
 
         child.timeout = timeout;
         child.timeoutUnit = timeoutUnit;
+        child.returnClass = returnClass;
         return child;
     }
 
@@ -173,6 +180,8 @@ class CallSiteBuilder implements Request {
     void decorateFromMethod(DataBinder dataBinder, Method method) {
         decorateFromAnnotations(method);
 
+        returnClass = method.getReturnType();
+        
         Type[] genericParameterTypes = method.getGenericParameterTypes();
 
         if (markedWithListener) {
@@ -356,7 +365,12 @@ class CallSiteBuilder implements Request {
     }
 
     private Object decodeReply(List<DbusObject> reply) {
-        return returnBinder.decode(reply.get(0));
+        if(reply.size() > 1 && returnClass.getAnnotation(Struct.class) != null) {
+            StructObject so = StructObject.create(new StructTypeDefinition(reply.stream().map(d -> d.getType()).collect(Collectors.toList())), reply);
+            return returnBinder.decode(so);
+        } else {
+            return returnBinder.decode(reply.get(0));
+        }
     }
 
     private static <A extends Annotation> void ifPresent(AnnotatedElement element, Class<A> annotationClass,

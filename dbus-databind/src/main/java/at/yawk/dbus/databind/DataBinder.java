@@ -34,6 +34,7 @@ public class DataBinder implements BinderFactoryContext {
         binderFactories.add(ArrayBinderFactory.getInstance());
         binderFactories.add(DictBinderFactory.getInstance());
         binderFactories.add(ObjectBinderFactory.getInstance());
+        binderFactories.add(StructBinderFactory.getInstance());
     }
 
     private <A extends Annotation> Optional<AnnotationBinderTransformer<?>> getBinderTransformer(
