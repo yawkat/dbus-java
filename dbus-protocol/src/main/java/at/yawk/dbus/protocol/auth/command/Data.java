@@ -8,7 +8,8 @@ package at.yawk.dbus.protocol.auth.command;
 
 import at.yawk.dbus.protocol.DbusUtil;
 import java.util.List;
-import javax.xml.bind.DatatypeConverter;
+
+import io.netty.buffer.ByteBufUtil;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 
@@ -28,6 +29,6 @@ public class Data extends Command {
 
     public static Data parse(List<String> args) {
         if (args.size() != 1) { throw new IllegalArgumentException("Expected exactly one argument"); }
-        return new Data(DatatypeConverter.parseHexBinary(args.get(0)));
+        return new Data(ByteBufUtil.decodeHexDump(args.get(0)));
     }
 }

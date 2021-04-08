@@ -58,10 +58,10 @@ public class DbusConnector {
         Bootstrap localBootstrap = bootstrap.clone();
         if (address instanceof DomainSocketAddress) {
             localBootstrap.group(new EpollEventLoopGroup());
-            localBootstrap.channel(EpollDomainSocketChannel.class);
+            localBootstrap.channelFactory(EpollDomainSocketChannel::new);
         } else {
             localBootstrap.group(new NioEventLoopGroup());
-            localBootstrap.channel(NioSocketChannel.class);
+            localBootstrap.channelFactory(NioSocketChannel::new);
         }
 
         Channel channel = localBootstrap.connect(address).sync().channel();

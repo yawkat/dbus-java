@@ -14,7 +14,9 @@ import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 import javax.annotation.Nonnull;
-import javax.xml.bind.DatatypeConverter;
+
+import io.netty.buffer.ByteBufUtil;
+import io.netty.util.internal.StringUtil;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -26,7 +28,7 @@ public class DbusUtil {
      * Parse a UUID without dashes.
      */
     public static UUID parseUuid(String hex) {
-        ByteBuffer bytes = ByteBuffer.wrap(DatatypeConverter.parseHexBinary(hex));
+        ByteBuffer bytes = ByteBuffer.wrap(parseHex(hex));
         return new UUID(bytes.getLong(), bytes.getLong());
     }
 
@@ -41,13 +43,15 @@ public class DbusUtil {
      * Get the hex representation of the given bytes.
      */
     public static String printHex(byte[] bytes) {
-        return DatatypeConverter.printHexBinary(bytes).toLowerCase();
+        return StringUtil.toHexString(bytes);
     }
 
     public static String printHex(ByteBuf buf) {
-        byte[] bytes = new byte[buf.readableBytes()];
-        buf.getBytes(buf.readerIndex(), bytes);
-        return printHex(bytes);
+        return ByteBufUtil.hexDump(buf);
+    }
+
+    public static byte[] parseHex(String s) {
+        return StringUtil.decodeHexDump(s);
     }
 
     /**

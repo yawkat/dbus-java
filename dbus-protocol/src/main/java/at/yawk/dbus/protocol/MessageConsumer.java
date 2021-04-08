@@ -6,19 +6,13 @@
 
 package at.yawk.dbus.protocol;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * @author yawkat
  */
 public interface MessageConsumer {
     MessageConsumer DISCARD = new MessageConsumer() {
-        Logger logger = LoggerFactory.getLogger(MessageConsumer.class);
-
         @Override
         public boolean requireAccept(MessageHeader header) {
-            logger.trace("Discarding {}", header);
             return false;
         }
 

@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>dbus-parent</artifactId>
+        <groupId>at.yawk.dbus</groupId>
+        <version>1.1-SNAPSHOT</version>
+    </parent>
+
+    <properties>
+        <skipNativeImageTest>true</skipNativeImageTest>
+    </properties>
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>native-image-test</artifactId>
+
+    <dependencies>
+        <dependency>
+            <groupId>at.yawk.dbus</groupId>
+            <artifactId>dbus-client</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>1.7.30</version>
+        </dependency>
+    </dependencies>
+
+    <profiles>
+        <profile>
+            <id>has-native-image</id>
+            <activation>
+                <file>
+                    <exists>${java.home}/bin/native-image</exists>
+                </file>
+            </activation>
+            <properties>
+                <skipNativeImageTest>false</skipNativeImageTest>
+            </properties>
+        </profile>
+    </profiles>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.graalvm.nativeimage</groupId>
+                <artifactId>native-image-maven-plugin</artifactId>
+                <version>21.0.0.2</version>
+                <executions>
+                    <execution>
+                        <id>native-image</id>
+                        <goals>
+                            <goal>native-image</goal>
+                        </goals>
+                        <phase>package</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <skip>${skipNativeImageTest}</skip>
+                    <imageName>ni-test</imageName>
+                    <mainClass>Test</mainClass>
+                    <buildArgs>
+                        <arg>--no-fallback</arg>
+                        <arg>--allow-incomplete-classpath</arg>
+                        <arg>--report-unsupported-elements-at-runtime</arg>
+                        <arg>--initialize-at-build-time=org.slf4j</arg>
+                    </buildArgs>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.6.0</version>
+                <executions>
+                    <execution>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <skip>${skipNativeImageTest}</skip>
+                    <executable>${project.build.directory}/ni-test</executable>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

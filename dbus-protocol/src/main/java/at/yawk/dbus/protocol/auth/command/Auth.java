@@ -9,7 +9,6 @@ package at.yawk.dbus.protocol.auth.command;
 import at.yawk.dbus.protocol.DbusUtil;
 import java.util.List;
 import javax.annotation.Nullable;
-import javax.xml.bind.DatatypeConverter;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 
@@ -43,6 +42,6 @@ public class Auth extends Command {
     public static Auth parse(List<String> args) {
         if (args.size() > 2) { throw new IllegalArgumentException("Too many arguments"); }
         return new Auth(args.isEmpty() ? null : args.get(0),
-                        args.size() <= 1 ? null : DatatypeConverter.parseHexBinary(args.get(1)));
+                        args.size() <= 1 ? null : DbusUtil.parseHex(args.get(1)));
     }
 }
